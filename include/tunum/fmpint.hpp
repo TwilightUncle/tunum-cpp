@@ -286,6 +286,15 @@ namespace tunum
             return this->rotate_l(n - shift_mod + shift_com);
         }
 
+        // 左側に連続している 0 ビットの数を返却
+        constexpr auto countl_zero() const noexcept
+        {
+            for (int cnt{}, i = data_length - 1; i >= 0; i--, cnt += sizeof(base_data_t) * 8)
+                if ((*this)[i])
+                    return cnt + std::countl_zero((*this)[i]);
+            return size * 8;
+        }
+
         // -------------------------------------------
         // 内部的な実装
         // -------------------------------------------
@@ -373,6 +382,7 @@ namespace tunum
                 += (next_size_fmpint{inner_mul(v1.upper, v2.upper)} <<= (size * 8));
         }
 
+        // 割り算の商と余りのペアを返却
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
             if (!v2) throw std::invalid_argument{"0 div."};
@@ -380,24 +390,20 @@ namespace tunum
             if (v1._compare(v2) < 0)
                 return std::array{fmpint{}, fmpint{v1}};
 
-            // 最大桁のオーバーフローによるデータ損失の可能性を回避
-            if (auto subed = fmpint{v1} -= v2; subed._compare(v2) < 0)
-                return std::array{fmpint{1}, subed};
-
-            // 上の桁に合わせる
-            auto clone_v2 = fmpint{v2};
-            auto squred = 1;
-            while (v1._compare(clone_v2 <<= 1) < 0) squred++;
+            // v1 と v2 の先頭ビット位置より、v2のシフト数を取得
+            std::size_t v2_lshift_cnt = (std::max)(v2.countl_zero() - v1.countl_zero(), 0);
+            auto clone_v2 = fmpint{v2} <<= v2_lshift_cnt;
 
             // コア部分
             auto rem = fmpint{v1};
             auto quo = fmpint{};
-            while ((clone_v2 >>= 1)._compare(v2) >= 0) {
+            while ((clone_v2)._compare(v2) >= 0) {
                 if (rem._compare(clone_v2) >= 0) {
-                    quo |= (fmpint{1} <<= squred);
+                    quo |= (fmpint{1} <<= v2_lshift_cnt);
                     rem -= clone_v2;
                 }
-                squred--;
+                clone_v2 >>= 1;
+                v2_lshift_cnt--;
             }
             return std::array{quo, rem};
         }
