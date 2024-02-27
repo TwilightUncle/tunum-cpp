@@ -24,10 +24,8 @@ TEST(TunumFmpintTest, ConstructorTest)
 
     ASSERT_EQ(v3.lower.lower, 1234);
     ASSERT_EQ(v3.lower.upper, 0);
-    ASSERT_EQ(v3.sign, false);
     ASSERT_EQ(v4.lower, 5678);
     ASSERT_EQ(v4.upper, 0);
-    ASSERT_EQ(v4.sign, true);
     ASSERT_TRUE(v5.lower.lower == uint32_max);
     ASSERT_TRUE(v5.lower.upper == uint32_max);
     ASSERT_TRUE(v5.upper.lower == 0);
@@ -42,16 +40,12 @@ TEST(TunumFmpintTest, ConstructorTest)
 
     ASSERT_EQ(v7.lower.lower, 1234);
     ASSERT_EQ(v7.lower.upper, 0);
-    ASSERT_EQ(v7.sign, false);
     ASSERT_EQ(v8.lower.lower, 1234);
     ASSERT_EQ(v8.lower.upper, 0);
-    ASSERT_EQ(v8.sign, false);
     ASSERT_EQ(v9.lower.lower, 5678);
     ASSERT_EQ(v9.lower.upper, 0);
-    ASSERT_EQ(v9.sign, true);
     ASSERT_EQ(v10.lower, uint32_max);
     ASSERT_EQ(v10.upper, uint32_max);
-    ASSERT_EQ(v10.sign, false);
 }
 
 TEST(TunumFmpintTest, ElementAccessTest)
@@ -69,4 +63,21 @@ TEST(TunumFmpintTest, ElementAccessTest)
     ASSERT_EQ(v1.at(3), v1.upper.upper);
     ASSERT_THROW(v1.at(4), std::out_of_range);
     ASSERT_THROW(v1.at(5), std::out_of_range);
+
+    v1.at(2) = 1000;
+    ASSERT_EQ(v1.at(2), 1000);
+}
+
+TEST(TunumFmpintTest, OperatorTest)
+{
+    constexpr auto completion = ~int128_t_2{};
+    for (int i = 0; i < 4; i++)
+        ASSERT_EQ(completion.at(i), ~std::uint32_t{});
+
+    constexpr auto v1 = int128_t_2{2} + int64_t_2{1};
+    constexpr auto v2 = int64_t_2{2} + int128_t_2{1};
+    static_assert(std::same_as<decltype(v1), decltype(v2)>, "expect same type.");
+    
+    for (int i = 0; i < 4; i++)
+        ASSERT_EQ(v1.at(i), v2.at(i));
 }
