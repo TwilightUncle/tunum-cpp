@@ -80,6 +80,9 @@ namespace tunum
         static constexpr std::size_t half_size = size >> 1;
         static constexpr std::size_t data_length = size / sizeof(base_data_t);
 
+        static constexpr std::size_t base_data_bit_width = sizeof(base_data_t) * 8;
+        static constexpr std::size_t max_bit_width = size * 8;
+
         using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1)>;
         using half_fmpint = std::conditional_t<
             half_size == sizeof(base_data_t),
@@ -175,14 +178,14 @@ namespace tunum
         // 左シフト
         constexpr auto& operator<<=(std::size_t n) noexcept
         {
-            const auto shift_mod = n % (sizeof(base_data_t) * 8);
-            const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
-            const auto shift_mul = n / (sizeof(base_data_t) * 8);
+            const auto shift_mod = n % base_data_bit_width;
+            const auto shift_com = base_data_bit_width - shift_mod;
+            const auto shift_mul = n / base_data_bit_width;
 
             if (data_length <= shift_mul)
                 return *this = fmpint{};
             
-            this->rotate_l(n);
+            *this = this->rotate_l(n);
 
             // ローテート演算で回ってきた部分を除去
             for (std::size_t i = 0; i< shift_mul; i++)
@@ -194,14 +197,14 @@ namespace tunum
         // 右シフト
         constexpr auto& operator>>=(std::size_t n) noexcept
         {
-            const auto shift_mod = n % (sizeof(base_data_t) * 8);
-            const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
-            const auto shift_mul = n / (sizeof(base_data_t) * 8);
+            const auto shift_mod = n % base_data_bit_width;
+            const auto shift_com = base_data_bit_width - shift_mod;
+            const auto shift_mul = n / base_data_bit_width;
 
             if (data_length <= shift_mul)
                 return *this = fmpint{};
             
-            this->rotate_r(n);
+            *this = this->rotate_r(n);
 
             // ローテート演算で回ってきた部分を除去
             for (std::size_t i = shift_mul + 1; i < data_length; i++)
@@ -272,25 +275,24 @@ namespace tunum
         // -------------------------------------------
 
         // ビット左ローテーション
-        constexpr auto& rotate_l(std::size_t n) noexcept
+        constexpr auto rotate_l(std::size_t n) const noexcept
         {
-            if (!n) return *this;
-            const auto shift_mod = n % (sizeof(base_data_t) * 8);
-            const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
-            const auto this_clone = fmpint{*this};
-            for (std::size_t i = 0; i < data_length; i++)
-                (*this)[i] = (this_clone[i] << shift_mod)
-                    | (this_clone[i + data_length - 1 % data_length] >> shift_com);
-            return *this;
+            auto this_clone = fmpint{*this};
+            if (!n) return this_clone;
+            const auto shift_mod = n % base_data_bit_width;
+            const auto i_diff = n / base_data_bit_width;
+            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
+            for (std::size_t i = 0; i < data_length; i++) {
+                auto& elem = this_clone[(i + i_diff) % data_length];
+                elem = ((*this)[i] << shift_mod);
+                if (shift_com)
+                    elem |= ((*this)[(i + data_length - 1) % data_length] >> shift_com);
+            }
+            return this_clone;
         }
 
         // ビット右ローテーション
-        constexpr auto& rotate_r(std::size_t n) noexcept
-        {
-            const auto shift_mod = n % (sizeof(base_data_t) * 8);
-            const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
-            return this->rotate_l(n - shift_mod + shift_com);
-        }
+        constexpr auto rotate_r(std::size_t n) const noexcept { return this->rotate_l(max_bit_width - (n % max_bit_width)); }
 
         // 左側に連続している 0 ビットの数を返却
         constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(0, true); }
@@ -330,7 +332,6 @@ namespace tunum
         // 指定されたビットが指定の方向(左右)から連続でいくつ並んでいるかかカウント
         constexpr auto count_continuous_bit(const bool bit, const bool is_begin_l) const noexcept
         {
-            constexpr auto base_data_bit_width = sizeof(base_data_t) * 8;
             constexpr auto inner_f = [&bit, &is_begin_l](const half_fmpint& v) {
                 if constexpr (std::integral<half_fmpint>) {
                     // ビット反転すると結果は同じでしょう
@@ -349,25 +350,21 @@ namespace tunum
         }
 
         // 格納値を表現するのに必要なビット幅を返却
-        constexpr auto get_bit_width() const noexcept
-        {
-            return (data_length * sizeof(base_data_t) * 8) 
-                - this->countl_zero_bit();
-        }
+        constexpr auto get_bit_width() const noexcept { return max_bit_width - this->countl_zero_bit(); }
 
         // 指定位置のビットを取得
         constexpr auto get_bit(std::size_t i) const
         {
-            const auto base_data_index = i / (sizeof(base_data_t) * 8);
-            const auto bit_pos = i % (sizeof(base_data_t) * 8);
+            const auto base_data_index = i / base_data_bit_width;
+            const auto bit_pos = i % base_data_bit_width;
             return bool(this->at(base_data_index) & (base_data_t{1} << bit_pos));
         }
 
         // 指定位置のビットを変更
         constexpr void set_bit(std::size_t i, bool value)
         {
-            const auto base_data_index = i / (sizeof(base_data_t) * 8);
-            const auto bit_pos = i % (sizeof(base_data_t) * 8);
+            const auto base_data_index = i / base_data_bit_width;
+            const auto bit_pos = i % base_data_bit_width;
             const auto single_bit = base_data_t{1} << bit_pos;
             if (!value)
                 this->at(base_data_index) &= (~single_bit);

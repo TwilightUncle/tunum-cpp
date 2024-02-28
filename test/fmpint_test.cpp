@@ -68,6 +68,81 @@ TEST(TunumFmpintTest, ElementAccessTest)
     ASSERT_EQ(v1.at(2), 1000);
 }
 
+TEST(TunumFmpintTest, BitRotateTest)
+{
+    constexpr auto bit32_1 = 0b0000'1111'1111'1111'1111'0000'0000'1111u;
+    constexpr auto bit32_2 = 0b0000'1111'1111'1111'0000'0000'0000'0000u;
+    constexpr auto bit32_3 = std::uint32_t{};
+    constexpr auto bit32_4 = ~std::uint32_t{};
+
+    auto bit128_1 = tunum::int128_t{};
+    bit128_1[0] = bit32_1;
+    bit128_1[1] = bit32_2;
+    bit128_1[2] = bit32_3;
+    bit128_1[3] = bit32_4;
+
+    // 結果が変化しないことの確認
+    for (int i = 0; i < 6; i++) {
+        const auto bit128_n = bit128_1.rotate_l(i * 128);
+        EXPECT_EQ(bit128_n[0], bit32_1);
+        EXPECT_EQ(bit128_n[1], bit32_2);
+    }
+    for (int i = 0; i < 6; i++) {
+        const auto bit128_n = bit128_1.rotate_r(i * 128);
+        EXPECT_EQ(bit128_n[2], bit32_3);
+        EXPECT_EQ(bit128_n[3], bit32_4);
+    }
+    const auto bit128_2 = bit128_1.rotate_l(64);
+    EXPECT_EQ(bit128_2[0], bit32_3);
+    EXPECT_EQ(bit128_2[1], bit32_4);
+    EXPECT_EQ(bit128_2[2], bit32_1);
+    EXPECT_EQ(bit128_2[3], bit32_2);
+    const auto bit128_3 = bit128_2.rotate_r(32);
+    EXPECT_EQ(bit128_3[0], bit32_4);
+    EXPECT_EQ(bit128_3[1], bit32_1);
+    EXPECT_EQ(bit128_3[2], bit32_2);
+    EXPECT_EQ(bit128_3[3], bit32_3);
+    const auto bit128_4 = bit128_3.rotate_l(112 + 128 * 9);
+    EXPECT_EQ(bit128_4[0], 0b1111'0000'0000'1111'1111'1111'1111'1111u);
+    EXPECT_EQ(bit128_4[1], 0b0000'0000'0000'0000'0000'1111'1111'1111u);
+    EXPECT_EQ(bit128_4[2], 0b0000'0000'0000'0000'0000'1111'1111'1111u);
+    EXPECT_EQ(bit128_4[3], 0b1111'1111'1111'1111'0000'0000'0000'0000u);
+    const auto bit128_5 = bit128_4.rotate_r(16 + 128 * 54);
+    EXPECT_EQ(bit128_5[0], bit32_1);
+    EXPECT_EQ(bit128_5[1], bit32_2);
+    EXPECT_EQ(bit128_5[2], bit32_3);
+    EXPECT_EQ(bit128_5[3], bit32_4);
+
+    // constexpr でも動くか確認
+    constexpr auto bit64_1 = tunum::fmpint<8>{0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111'1111'1111'0000'0000'0000'0000u};
+    constexpr auto bit64_2 = bit64_1.rotate_l(48);
+    EXPECT_EQ(bit64_2[0], 0b1111'0000'0000'1111'0000'1111'1111'1111u);
+    EXPECT_EQ(bit64_2[1], 0b0000'0000'0000'0000'0000'1111'1111'1111u);
+    constexpr auto bit64_3 = bit64_2.rotate_r(48 + 64 * 123);
+    EXPECT_EQ(bit64_3[0], bit32_2);
+    EXPECT_EQ(bit64_3[1], bit32_1);
+
+    auto bit256_1 = tunum::int256_t{};
+    bit256_1[0] = bit32_1;
+    bit256_1[1] = bit32_2;
+    bit256_1[2] = bit32_3;
+    bit256_1[3] = bit32_4;
+    bit256_1[4] = bit32_3;
+    bit256_1[5] = bit32_2;
+    bit256_1[6] = bit32_1;
+    bit256_1[7] = bit32_4;
+    const auto bit256_2 = bit256_1.rotate_l(128 + 11)
+        .rotate_r(128 + 11 + 256 * 1237);
+    EXPECT_EQ(bit256_2[0], bit32_1);
+    EXPECT_EQ(bit256_2[1], bit32_2);
+    EXPECT_EQ(bit256_2[2], bit32_3);
+    EXPECT_EQ(bit256_2[3], bit32_4);
+    EXPECT_EQ(bit256_2[4], bit32_3);
+    EXPECT_EQ(bit256_2[5], bit32_2);
+    EXPECT_EQ(bit256_2[6], bit32_1);
+    EXPECT_EQ(bit256_2[7], bit32_4);
+}
+
 TEST(TunumFmpintTest, OperatorTest)
 {
     constexpr auto completion = ~int128_t_2{};
