@@ -2,14 +2,10 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_HPP
 
 #include <bit>
-#include <bitset>
 #include <concepts>
-#include <algorithm>
 #include <array>
 #include <string_view>
-#include <ranges>
 #include <stdexcept>
-#include <vector>
 #include <compare>
 
 namespace tunum
@@ -177,7 +173,7 @@ namespace tunum
         }
 
         // 左シフト
-        constexpr auto operator<<=(std::size_t n) noexcept
+        constexpr auto& operator<<=(std::size_t n) noexcept
         {
             const auto shift_mod = n % (sizeof(base_data_t) * 8);
             const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
@@ -187,16 +183,16 @@ namespace tunum
                 return *this = fmpint{};
             
             this->rotate_l(n);
-            for (std::size_t i = 0; i< shift_mul; i++)
-                (*this)[i] = 0;
 
             // ローテート演算で回ってきた部分を除去
+            for (std::size_t i = 0; i< shift_mul; i++)
+                (*this)[i] = 0;
             ((*this)[shift_mul] >>= shift_com) <<= shift_com;
             return *this;
         }
 
         // 右シフト
-        constexpr auto operator>>=(std::size_t n) noexcept
+        constexpr auto& operator>>=(std::size_t n) noexcept
         {
             const auto shift_mod = n % (sizeof(base_data_t) * 8);
             const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
@@ -206,10 +202,10 @@ namespace tunum
                 return *this = fmpint{};
             
             this->rotate_r(n);
-            for (std::size_t i = shift_mul + 1; i < data_length; i++)
-                (*this)[i] = 0;
 
             // ローテート演算で回ってきた部分を除去
+            for (std::size_t i = shift_mul + 1; i < data_length; i++)
+                (*this)[i] = 0;
             ((*this)[shift_mul] <<= shift_com) >>= shift_com;
             return *this;
         }
@@ -245,7 +241,7 @@ namespace tunum
         constexpr auto operator-() const noexcept
         {
             // 2 の補数を返却
-            return (~(*this)) += 1;
+            return ++(~(*this));
         }
 
         // 加算代入
@@ -272,12 +268,13 @@ namespace tunum
         constexpr auto operator--(int) noexcept { return std::exchange(*this, --fmpint{*this}); }
 
         // -------------------------------------------
-        // その他メンバ関数
+        // ビット操作メンバ関数
         // -------------------------------------------
 
         // ビット左ローテーション
-        constexpr auto rotate_l(std::size_t n) noexcept
+        constexpr auto& rotate_l(std::size_t n) noexcept
         {
+            if (!n) return *this;
             const auto shift_mod = n % (sizeof(base_data_t) * 8);
             const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
             const auto this_clone = fmpint{*this};
@@ -288,7 +285,7 @@ namespace tunum
         }
 
         // ビット右ローテーション
-        constexpr auto rotate_r(std::size_t n) noexcept
+        constexpr auto& rotate_r(std::size_t n) noexcept
         {
             const auto shift_mod = n % (sizeof(base_data_t) * 8);
             const auto shift_com = (sizeof(base_data_t) * 8) - shift_mod;
@@ -296,12 +293,86 @@ namespace tunum
         }
 
         // 左側に連続している 0 ビットの数を返却
-        constexpr auto countl_zero() const noexcept
+        constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(0, true); }
+
+        // 左側に連続している 1 ビットの数を返却
+        constexpr auto countl_one_bit() const noexcept { return this->count_continuous_bit(1, true); }
+
+        // 右側に連続している 0 ビットの数を返却
+        constexpr auto countr_zero_bit() const noexcept { return this->count_continuous_bit(0, false); }
+
+        // 右側に連続している 1 ビットの数を返却
+        constexpr auto countr_one_bit() const noexcept { return this->count_continuous_bit(1, false); }
+
+        // 寝ているビットをカウント
+        constexpr auto count_zero_bit() const noexcept { return (~(*this)).count_one_bit(); }
+
+        // 立っているビットをカウント
+        constexpr auto count_one_bit() const noexcept
         {
-            for (int cnt{}, i = data_length - 1; i >= 0; i--, cnt += sizeof(base_data_t) * 8)
-                if ((*this)[i])
-                    return cnt + std::countl_zero((*this)[i]);
-            return size * 8;
+            constexpr auto inner_count = [](const half_fmpint& v) {
+                if constexpr (std::integral<half_fmpint>)
+                    return std::popcount(v);
+                else v.count_one_bit();
+            };
+            return inner_count(this->lower) + inner_count(this->upper);
+        }
+
+        // 全てのビットが立っているかどうか判定。
+        // 引数にfalseを指定すると、すべてのビットが寝ているかどうか判定
+        constexpr bool is_full_bit(const bool bit = true) const noexcept
+        {
+            return bit
+                ? this->count_zero_bit() == 0
+                : this->count_one_bit() == 0;
+        }
+
+        // 指定されたビットが指定の方向(左右)から連続でいくつ並んでいるかかカウント
+        constexpr auto count_continuous_bit(const bool bit, const bool is_begin_l) const noexcept
+        {
+            constexpr auto base_data_bit_width = sizeof(base_data_t) * 8;
+            constexpr auto inner_f = [&bit, &is_begin_l](const half_fmpint& v) {
+                if constexpr (std::integral<half_fmpint>) {
+                    // ビット反転すると結果は同じでしょう
+                    const auto _v = !bit ? ~v : v;
+                    return is_begin_l ? std::countl_one(_v) : std::countr_one(_v);
+                }
+                else
+                    return v.count_continuous_bit(bit, is_begin_l);
+            };
+
+            const auto first_bit_cnt = inner_f(is_begin_l ? this->upper : this->lower); 
+            // フルビットじゃなければ連続していないのでその場で返却
+            return first_bit_cnt != (base_data_bit_width * data_length / 2)
+                ? first_bit_cnt
+                : first_bit_cnt + inner_f(is_begin_l ? this->lower : this->upper);
+        }
+
+        // 格納値を表現するのに必要なビット幅を返却
+        constexpr auto get_bit_width() const noexcept
+        {
+            return (data_length * sizeof(base_data_t) * 8) 
+                - this->countl_zero_bit();
+        }
+
+        // 指定位置のビットを取得
+        constexpr auto get_bit(std::size_t i) const
+        {
+            const auto base_data_index = i / (sizeof(base_data_t) * 8);
+            const auto bit_pos = i % (sizeof(base_data_t) * 8);
+            return bool(this->at(base_data_index) & (base_data_t{1} << bit_pos));
+        }
+
+        // 指定位置のビットを変更
+        constexpr void set_bit(std::size_t i, bool value)
+        {
+            const auto base_data_index = i / (sizeof(base_data_t) * 8);
+            const auto bit_pos = i % (sizeof(base_data_t) * 8);
+            const auto single_bit = base_data_t{1} << bit_pos;
+            if (!value)
+                this->at(base_data_index) &= (~single_bit);
+            else
+                this->at(base_data_index) |= single_bit;
         }
 
         // -------------------------------------------
@@ -351,12 +422,9 @@ namespace tunum
         static constexpr auto _add(const fmpint& v1, const fmpint& v2) noexcept
         {
             using next_size_fmpint = fmpint<(size << 1)>;
-            using self_size_fmpint = fmpint<size>;
-
-            // 型の形式の違いを吸収
             constexpr auto inner_add = [](const half_fmpint& l, const half_fmpint& r) {
                 if constexpr (std::same_as<base_data_t, half_fmpint>)
-                    return self_size_fmpint{std::uint64_t(l) + std::uint64_t(r)};
+                    return fmpint{std::uint64_t(l) + std::uint64_t(r)};
                 else
                     return half_fmpint::_add(l, r);
             };
@@ -365,7 +433,7 @@ namespace tunum
             const auto l = inner_add(v1.lower, v2.lower);
             const auto u = inner_add(v1.upper, v2.upper);
             const auto carry = inner_add(l.upper, u.lower);
-            auto next_lower = self_size_fmpint{l.lower};
+            auto next_lower = fmpint{l.lower};
             next_lower.upper = carry.lower;
             auto r = next_size_fmpint{next_lower};
             r.upper = inner_add(u.upper, carry.upper);
@@ -376,10 +444,9 @@ namespace tunum
         static constexpr auto _mul(const fmpint& v1, const fmpint& v2) noexcept
         {
             using next_size_fmpint = fmpint<(size << 1)>;
-            using self_size_fmpint = fmpint<size>;
             constexpr auto inner_mul = [](const half_fmpint& l, const half_fmpint& r) {
                 if constexpr (std::same_as<base_data_t, half_fmpint>)
-                    return self_size_fmpint{std::uint64_t(l) * std::uint64_t(r)};
+                    return fmpint{std::uint64_t(l) * std::uint64_t(r)};
                 else
                     return half_fmpint::_mul(l, r);
             };
@@ -392,8 +459,10 @@ namespace tunum
         }
 
         // 割り算の商と余りのペアを返却
+        // v1 と v2の差が大きいほど計算量も増える
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
+            // 重いので計算せずとも自明なものはここではじいておく
             if (!v2) throw std::invalid_argument{"0 div."};
             if (!v1) return std::array{fmpint{}, fmpint{}};
             if (v1._compare(v2) < 0)
@@ -401,20 +470,18 @@ namespace tunum
             if (v2._compare(fmpint{1}) == 0)
                 return std::array{fmpint{v1}, fmpint{}};
 
-            // v1 と v2 の先頭ビット位置より、v2のシフト数を取得
-            std::size_t v2_lshift_cnt = (std::max)(v2.countl_zero() - v1.countl_zero(), 0);
-            auto clone_v2 = fmpint{v2} <<= v2_lshift_cnt;
+            // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
+            const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
 
             // コア部分
             auto rem = fmpint{v1};
             auto quo = fmpint{};
-            while ((clone_v2)._compare(v2) >= 0) {
-                if (rem._compare(clone_v2) >= 0) {
-                    quo |= (fmpint{1} <<= v2_lshift_cnt);
-                    rem -= clone_v2;
+            for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
+                const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
+                if (rem._compare(shifted_v2) >= 0) {
+                    quo.set_bit(v2_lshift_cnt - i, true);
+                    rem -= shifted_v2;
                 }
-                clone_v2 >>= 1;
-                v2_lshift_cnt--;
             }
             return std::array{quo, rem};
         }
@@ -438,9 +505,7 @@ namespace tunum
     constexpr auto operator>>(const T& l, std::size_t r) { return T{l} >>= r; }
 
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator|, |=)
-
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator&, &=)
-
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator^, ^=)
 
     constexpr auto operator<=>(const TuFmpIntegral auto& l, const TuIntegral auto& r) { return l._compare(r); }
@@ -448,11 +513,8 @@ namespace tunum
     constexpr auto operator<=>(std::integral auto l, const T& r) { return T{l}._compare(r); }
 
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator+, +=)
-
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator-, -=)
-
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator*, *=)
-
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator/, /=)
 
 #undef TUNUM_FUNC_MAKE_FMPINT_OPERATOR
