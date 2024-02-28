@@ -179,7 +179,7 @@ namespace tunum
         constexpr auto& operator<<=(std::size_t n) noexcept
         {
             const auto shift_mod = n % base_data_bit_width;
-            const auto shift_com = base_data_bit_width - shift_mod;
+            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
             const auto shift_mul = n / base_data_bit_width;
 
             if (data_length <= shift_mul)
@@ -198,7 +198,7 @@ namespace tunum
         constexpr auto& operator>>=(std::size_t n) noexcept
         {
             const auto shift_mod = n % base_data_bit_width;
-            const auto shift_com = base_data_bit_width - shift_mod;
+            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
             const auto shift_mul = n / base_data_bit_width;
 
             if (data_length <= shift_mul)
@@ -279,9 +279,11 @@ namespace tunum
         {
             auto this_clone = fmpint{*this};
             if (!n) return this_clone;
+
             const auto shift_mod = n % base_data_bit_width;
             const auto i_diff = n / base_data_bit_width;
             const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
+
             for (std::size_t i = 0; i < data_length; i++) {
                 auto& elem = this_clone[(i + i_diff) % data_length];
                 elem = ((*this)[i] << shift_mod);
@@ -315,7 +317,8 @@ namespace tunum
             constexpr auto inner_count = [](const half_fmpint& v) {
                 if constexpr (std::integral<half_fmpint>)
                     return std::popcount(v);
-                else v.count_one_bit();
+                else
+                    return v.count_one_bit();
             };
             return inner_count(this->lower) + inner_count(this->upper);
         }
