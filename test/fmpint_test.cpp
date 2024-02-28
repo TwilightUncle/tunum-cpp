@@ -236,7 +236,9 @@ TEST(TunumFmpintTest, BitOperationTest)
     auto bit128_1 = tunum::int128_t{};
     bit128_1.set_bit(5, true);
     bit128_1.set_bit(43, true);
+    bit128_1.set_bit(43, true);
     bit128_1.set_bit(44, true);
+    bit128_1.set_bit(44, false);
     bit128_1.set_bit(44, false);
     EXPECT_EQ(bit128_1[0], 1 << 5);
     EXPECT_EQ(bit128_1[1], 1 << (43 - 32));

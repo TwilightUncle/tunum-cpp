@@ -297,16 +297,16 @@ namespace tunum
         constexpr auto rotate_r(std::size_t n) const noexcept { return this->rotate_l(max_bit_width - (n % max_bit_width)); }
 
         // 左側に連続している 0 ビットの数を返却
-        constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(0, true); }
+        constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(false, true); }
 
         // 左側に連続している 1 ビットの数を返却
-        constexpr auto countl_one_bit() const noexcept { return this->count_continuous_bit(1, true); }
+        constexpr auto countl_one_bit() const noexcept { return this->count_continuous_bit(true, true); }
 
         // 右側に連続している 0 ビットの数を返却
-        constexpr auto countr_zero_bit() const noexcept { return this->count_continuous_bit(0, false); }
+        constexpr auto countr_zero_bit() const noexcept { return this->count_continuous_bit(false, false); }
 
         // 右側に連続している 1 ビットの数を返却
-        constexpr auto countr_one_bit() const noexcept { return this->count_continuous_bit(1, false); }
+        constexpr auto countr_one_bit() const noexcept { return this->count_continuous_bit(true, false); }
 
         // 寝ているビットをカウント
         constexpr auto count_zero_bit() const noexcept { return (~(*this)).count_one_bit(); }
@@ -333,23 +333,23 @@ namespace tunum
         }
 
         // 指定されたビットが指定の方向(左右)から連続でいくつ並んでいるかかカウント
-        constexpr auto count_continuous_bit(const bool bit, const bool is_begin_l) const noexcept
+        constexpr auto count_continuous_bit(bool bit, bool is_begin_l) const noexcept
         {
-            constexpr auto inner_f = [&bit, &is_begin_l](const half_fmpint& v) {
+            constexpr auto inner_f = [](const half_fmpint& v, bool _bit, bool _is_begin_l) {
                 if constexpr (std::integral<half_fmpint>) {
                     // ビット反転すると結果は同じでしょう
-                    const auto _v = !bit ? ~v : v;
-                    return is_begin_l ? std::countl_one(_v) : std::countr_one(_v);
+                    const auto _v = !_bit ? ~v : v;
+                    return _is_begin_l ? std::countl_one(_v) : std::countr_one(_v);
                 }
                 else
-                    return v.count_continuous_bit(bit, is_begin_l);
+                    return v.count_continuous_bit(_bit, _is_begin_l);
             };
 
-            const auto first_bit_cnt = inner_f(is_begin_l ? this->upper : this->lower); 
+            const auto first_bit_cnt = inner_f(is_begin_l ? this->upper : this->lower, bit, is_begin_l); 
             // フルビットじゃなければ連続していないのでその場で返却
             return first_bit_cnt != (base_data_bit_width * data_length / 2)
                 ? first_bit_cnt
-                : first_bit_cnt + inner_f(is_begin_l ? this->lower : this->upper);
+                : first_bit_cnt + inner_f(is_begin_l ? this->lower : this->upper, bit, is_begin_l);
         }
 
         // 格納値を表現するのに必要なビット幅を返却
