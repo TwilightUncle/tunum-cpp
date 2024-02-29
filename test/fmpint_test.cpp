@@ -195,6 +195,10 @@ TEST(TunumFmpintTest, ConstOperatorTest)
     EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int256_t{});
     EXPECT_FALSE(~tunum::int128_t{} >= ~tunum::int256_t{});
     EXPECT_TRUE(~tunum::int128_t{} < ~tunum::int256_t{});
+    EXPECT_TRUE(tunum::int128_t{} != 1);
+    EXPECT_TRUE(tunum::int128_t{} < 1);
+    EXPECT_TRUE(4 > tunum::int256_t{3});
+    EXPECT_TRUE(4 == tunum::int256_t{4});
 }
 
 TEST(TunumFmpintTest, BitOperationTest)
@@ -310,14 +314,23 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v7[6], ~std::uint32_t{});
     EXPECT_EQ(v7[7], 1);
 
-    constexpr auto v8 = tunum::fmpint<8>{v5} - tunum::int128_t{~std::uint32_t{} - 1};
-    EXPECT_EQ(v8[0], 0);
-    EXPECT_EQ(v8[1], ~std::uint32_t{});
-    EXPECT_EQ(v8[2], 0);
-    EXPECT_EQ(v8[3], 0);
+    EXPECT_EQ(
+        tunum::fmpint<8>{v5} - tunum::int128_t{~std::uint32_t{} - 1},
+        tunum::int128_t{~std::uint32_t{}} << 32
+    );
     EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int128_t{} - 1);
     EXPECT_TRUE(~tunum::int128_t{} > ~tunum::int128_t{} - 1);
     EXPECT_FALSE(~tunum::int128_t{} <= ~tunum::int128_t{} - 1);
+
+    // 乗算
+    EXPECT_EQ(
+        tunum::int128_t{~std::uint32_t{}} * tunum::int128_t{~std::uint32_t{}},
+        std::uint64_t{~std::uint32_t{}} * std::uint64_t{~std::uint32_t{}}
+    );
+    EXPECT_EQ(
+        tunum::fmpint<8>{~std::uint64_t{}} * tunum::int128_t{~std::uint64_t{}},
+        (tunum::int128_t{~std::uint64_t{} - 1} << 64) + 1
+    );
 }
 
 // TEST(TunumFmpintTest, StringConstructorTest)
