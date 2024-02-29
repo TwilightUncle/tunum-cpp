@@ -162,9 +162,9 @@ TEST(TunumFmpintTest, BitRotateTest)
     EXPECT_EQ(bit128_7[3], 0);
 }
 
-// const 修飾のついたメンバ関数の演算子オーバーロードテスト
+// イミュータブルな演算子オーバーロードテスト
 // ※内部的に四則演算のオーバーロードを用いるものを除く
-TEST(TunumFmpintTest, ConstMemberOperatorTest)
+TEST(TunumFmpintTest, ConstOperatorTest)
 {
     EXPECT_FALSE(bool(tunum::int128_t{}));
     EXPECT_TRUE(!tunum::int128_t{});
@@ -188,6 +188,13 @@ TEST(TunumFmpintTest, ConstMemberOperatorTest)
     EXPECT_EQ(completion_3[1], bit32_3);
     EXPECT_EQ(completion_3[2], bit32_3);
     EXPECT_EQ(completion_3[3], bit32_3);
+
+    EXPECT_TRUE(tunum::int128_t{} == tunum::int256_t{});
+    EXPECT_TRUE(tunum::int128_t{} <= tunum::int256_t{});
+    EXPECT_FALSE(tunum::int128_t{} > tunum::int256_t{});
+    EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int256_t{});
+    EXPECT_FALSE(~tunum::int128_t{} >= ~tunum::int256_t{});
+    EXPECT_TRUE(~tunum::int128_t{} < ~tunum::int256_t{});
 }
 
 TEST(TunumFmpintTest, BitOperationTest)
@@ -308,6 +315,9 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v8[1], ~std::uint32_t{});
     EXPECT_EQ(v8[2], 0);
     EXPECT_EQ(v8[3], 0);
+    EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int128_t{} - 1);
+    EXPECT_TRUE(~tunum::int128_t{} > ~tunum::int128_t{} - 1);
+    EXPECT_FALSE(~tunum::int128_t{} <= ~tunum::int128_t{} - 1);
 }
 
 // TEST(TunumFmpintTest, StringConstructorTest)

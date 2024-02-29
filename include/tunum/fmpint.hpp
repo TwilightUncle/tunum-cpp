@@ -463,25 +463,18 @@ namespace tunum
         }
 
         // 比較
-        template <std::size_t Bytes2>
-        constexpr auto _compare(const fmpint<Bytes2>& v) const noexcept
+        constexpr auto _compare(const fmpint& v) const noexcept
         {
-            using arg_t = fmpint<Bytes2>;
-            if constexpr (size < arg_t::size)
-                return arg_t{*this}._compare(v);
-            else {
-                constexpr auto inner_compare = [](const half_fmpint& v1, const half_fmpint& v2) {
-                    if constexpr (std::same_as<half_fmpint, base_data_t>)
-                        return v1 <=> v2;
-                    else return v1._compare(v2);
-                };
+            constexpr auto inner_compare = [](const half_fmpint& v1, const half_fmpint& v2) {
+                if constexpr (std::same_as<half_fmpint, base_data_t>)
+                    return v1 <=> v2;
+                else return v1._compare(v2);
+            };
 
-                const auto resized_v = fmpint{v};
-                const auto upper_comp = inner_compare(v.upper, resized_v.upper);
-                return upper_comp != 0
-                    ? upper_comp
-                    : inner_compare(v.lower, resized_v.lower);
-            }
+            const auto upper_comp = inner_compare(this->upper, v.upper);
+            return upper_comp != 0
+                ? upper_comp
+                : inner_compare(this->lower, v.lower);
         }
 
         // 加算の際にデータの損失が起こらないよう、一つ上のサイズの整数にして返却
@@ -574,9 +567,17 @@ namespace tunum
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator&, &=)
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator^, ^=)
 
-    constexpr auto operator<=>(const TuFmpIntegral auto& l, const TuIntegral auto& r) { return l._compare(r); }
+    template <TuFmpIntegral T1, TuIntegral T2>
+    constexpr auto operator<=>(const T1& l, const T2& r)
+    {
+        using large_integral_t = get_large_integral_t<T1, T2>;
+        return large_integral_t{l}._compare(large_integral_t{r});
+    }
     template <TuFmpIntegral T>
     constexpr auto operator<=>(std::integral auto l, const T& r) { return T{l}._compare(r); }
+
+    constexpr bool operator==(const TuFmpIntegral auto& l, const TuIntegral auto& r) { return (l <=> r) == 0; }
+    constexpr bool operator==(std::integral auto l, const TuFmpIntegral auto& r) { return (l <=> r) == 0; }
 
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator+, +=)
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator-, -=)
