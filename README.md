@@ -7,8 +7,7 @@ C++20を有効にした状態の、下記の環境/コンパイラにおいて�
 -   Windows11
     -   Visual Studio 2022 付属の VC++
 -   ubuntu 22.04 (Docker)
-    -   GCC: 11, 12  
-        ※gcc-10は`std::bit_cast`が動かないため、対象外
+    -   GCC: 10, 11, 12  
     -   Clang: 12, 13, 14
 
 ## テストのビルドと実行
