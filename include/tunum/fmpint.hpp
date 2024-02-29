@@ -222,15 +222,25 @@ namespace tunum
         constexpr const base_data_t& operator[](std::size_t n) const { return _at(this, n); }
         constexpr base_data_t& operator[](std::size_t n) { return _at(this, n); }
 
+        // 組み込み整数へのキャスト
+        constexpr explicit operator std::uint64_t() const noexcept
+        {
+            return (std::uint64_t{(*this)[1]} << base_data_digits2)
+                | std::uint64_t{(*this)[0]};
+        }
+        constexpr explicit operator std::uint32_t() const noexcept { return (*this)[0]; }
+        constexpr explicit operator std::uint16_t() const noexcept { return std::uint16_t{(*this)[0]}; }
+        constexpr explicit operator std::uint8_t() const noexcept { return std::uint8_t{(*this)[0]}; }
+
         // bool キャスト
-        explicit operator bool() const noexcept
+        constexpr explicit operator bool() const noexcept
         {
             return static_cast<bool>(this->lower)
                 || static_cast<bool>(this->upper);
         }
 
         // 否定
-        bool operator!() const noexcept { return !static_cast<bool>(*this); }
+        constexpr bool operator!() const noexcept { return !static_cast<bool>(*this); }
 
         // ビット反転
         constexpr auto operator~() const noexcept
@@ -528,21 +538,41 @@ namespace tunum
                 return std::array{fmpint{}, fmpint{v1}};
             if (v2._compare(fmpint{1}) == 0)
                 return std::array{fmpint{v1}, fmpint{}};
-
-            // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
-            const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
-
-            // コア部分
-            auto rem = fmpint{v1};
-            auto quo = fmpint{};
-            for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
-                const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
-                if (rem._compare(shifted_v2) >= 0) {
-                    quo.set_bit(v2_lshift_cnt - i, true);
-                    rem -= shifted_v2;
+                
+            if constexpr (std::same_as<base_data_t, half_fmpint>)
+                // 組み込みの演算子使えるならそっち優先
+                return std::array{
+                    fmpint{std::uint64_t{v1} / std::uint64_t{v2}},
+                    fmpint{std::uint64_t{v1} % std::uint64_t{v2}}
+                };
+            else {
+                // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
+                // ※約数みたいなもんで、計算回数を減らす
+                if (
+                    const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
+                    max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
+                ) {
+                    const auto [_quo, _rem] = half_fmpint::_div(
+                        (fmpint{v1} >>= min_zero_r_cnt).lower,
+                        (fmpint{v2} >>= min_zero_r_cnt).lower
+                    );
+                    // 余りは桁を削ってはいけないので戻す
+                    return std::array{fmpint{_quo}, fmpint{_rem} <<= min_zero_r_cnt};
                 }
+
+                // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
+                const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
+                auto rem = fmpint{v1};
+                auto quo = fmpint{};
+                for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
+                    const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
+                    if (rem._compare(shifted_v2) >= 0) {
+                        quo.set_bit(v2_lshift_cnt - i, true);
+                        rem -= shifted_v2;
+                    }
+                }
+                return std::array{quo, rem};
             }
-            return std::array{quo, rem};
         }
     };
 
@@ -583,6 +613,7 @@ namespace tunum
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator-, -=)
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator*, *=)
     TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator/, /=)
+    TUNUM_FUNC_MAKE_FMPINT_OPERATOR(operator%, %=)
 
 #undef TUNUM_FUNC_MAKE_FMPINT_OPERATOR
 

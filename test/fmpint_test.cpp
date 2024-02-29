@@ -166,8 +166,10 @@ TEST(TunumFmpintTest, BitRotateTest)
 // ※内部的に四則演算のオーバーロードを用いるものを除く
 TEST(TunumFmpintTest, ConstOperatorTest)
 {
-    EXPECT_FALSE(bool(tunum::int128_t{}));
-    EXPECT_TRUE(!tunum::int128_t{});
+    constexpr auto v1 = bool(tunum::int128_t{});
+    EXPECT_FALSE(v1);
+    constexpr auto v2 = !tunum::int128_t{};
+    EXPECT_TRUE(v2);
     EXPECT_TRUE((bool)tunum::int256_t{1});
     EXPECT_FALSE(!tunum::int256_t{1});
 
@@ -323,14 +325,51 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_FALSE(~tunum::int128_t{} <= ~tunum::int128_t{} - 1);
 
     // 乗算
-    EXPECT_EQ(
-        tunum::int128_t{~std::uint32_t{}} * tunum::int128_t{~std::uint32_t{}},
-        std::uint64_t{~std::uint32_t{}} * std::uint64_t{~std::uint32_t{}}
-    );
+    constexpr auto v8 = tunum::int128_t{~std::uint32_t{}} * tunum::int128_t{~std::uint32_t{}}
+        == std::uint64_t{~std::uint32_t{}} * std::uint64_t{~std::uint32_t{}};
+    EXPECT_TRUE(v8);
     EXPECT_EQ(
         tunum::fmpint<8>{~std::uint64_t{}} * tunum::int128_t{~std::uint64_t{}},
         (tunum::int128_t{~std::uint64_t{} - 1} << 64) + 1
     );
+
+    // 除算・剰余
+    EXPECT_THROW(~tunum::int512_t{} / 0, std::invalid_argument);
+    EXPECT_THROW(~tunum::int256_t{} % tunum::int512_t{0}, std::invalid_argument);
+    EXPECT_EQ(0 / tunum::int256_t{12345}, 0);
+    EXPECT_EQ(tunum::int512_t{} % 4, 0);
+    EXPECT_EQ(tunum::int512_t{3} / 4, 0);
+    EXPECT_EQ(tunum::int512_t{3} % 4, 3);
+    EXPECT_EQ(tunum::int512_t{3} / 1, 3);
+    EXPECT_EQ(tunum::int512_t{3} % 1, 0);
+    // 等しい値
+    EXPECT_THROW(tunum::int512_t{} / tunum::int128_t{}, std::invalid_argument);
+    constexpr auto v9 = tunum::int512_t{~tunum::int128_t{}} / ~tunum::int128_t{};
+    EXPECT_EQ(v9, 1);
+    EXPECT_EQ(tunum::int512_t{~tunum::int128_t{}} % ~tunum::int128_t{}, 0);
+    // 委譲→組み込み演算子呼び出し
+    EXPECT_EQ((tunum::int128_t{12345} << 60) / (tunum::int512_t{34} << 60), 12345 / 34);
+    constexpr auto v10 = (tunum::int128_t{12345} << 60) % (tunum::int512_t{34} << 60);
+    EXPECT_EQ(v10, tunum::int128_t{12345 % 34} << 60);
+    // コア部分確認(とりあえず具体的な数字がわからないので、割り切れる上、ビット操作で予想できるもののみ)
+    // 残りのテストは文字列初期化可能になってから
+    constexpr auto v11 = ~tunum::int512_t{} / ~tunum::int128_t{};
+    EXPECT_EQ(v11[0], 1);
+    EXPECT_EQ(v11[1], 0);
+    EXPECT_EQ(v11[2], 0);
+    EXPECT_EQ(v11[3], 0);
+    EXPECT_EQ(v11[4], 1);
+    EXPECT_EQ(v11[5], 0);
+    EXPECT_EQ(v11[6], 0);
+    EXPECT_EQ(v11[7], 0);
+    EXPECT_EQ(v11[8], 1);
+    EXPECT_EQ(v11[9], 0);
+    EXPECT_EQ(v11[10], 0);
+    EXPECT_EQ(v11[11], 0);
+    EXPECT_EQ(v11[12], 1);
+    EXPECT_EQ(v11[13], 0);
+    EXPECT_EQ(v11[14], 0);
+    EXPECT_EQ(v11[15], 0);
 }
 
 // TEST(TunumFmpintTest, StringConstructorTest)
