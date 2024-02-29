@@ -372,12 +372,19 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v11[15], 0);
 }
 
-// TEST(TunumFmpintTest, StringConstructorTest)
-// {
-//     constexpr auto uint32_max_s = L"4294967295";
-//     constexpr auto uint32_over_s = u8"4294967296";
+TEST(TunumFmpintTest, StringConstructorTest)
+{
+    constexpr auto uint32_max_s = L"4294967295";
+    constexpr auto uint32_over_s = u8"4294967296";
 
-//     constexpr auto v1 = tunum::int128_t{"0"};
-//     EXPECT_FALSE(bool(v1));
-//     constexpr auto v2 = tunum::int256_t{uint32_max_s};
-// }
+    // 2の128乗
+    constexpr auto uint128_max_s = u"340282366920938463463374607431768211455";
+    constexpr auto uint128_over_s = U"340282366920938463463374607431768211456";
+
+    constexpr auto v1 = tunum::int128_t{"0"};
+    EXPECT_FALSE(bool(v1));
+    EXPECT_EQ(tunum::int256_t{uint32_max_s}, ~std::uint32_t{});
+    EXPECT_EQ(tunum::int512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
+    EXPECT_EQ(tunum::int128_t{uint128_max_s}, ~tunum::int128_t{});
+    EXPECT_EQ(tunum::int128_t{uint128_over_s}, 0);
+}

@@ -88,7 +88,7 @@ namespace tunum
 
         static constexpr std::size_t base_data_digits2 = std::numeric_limits<base_data_t>::digits;
         static constexpr std::size_t max_digits2 = size * 8;
-        static constexpr std::size_t max_digits10 = std::size_t(max_digits2 * log10_2) + 1;
+        static constexpr std::size_t max_digits10 = std::size_t(max_digits2 * log10_2);
 
         using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1)>;
         using half_fmpint = std::conditional_t<
@@ -146,16 +146,6 @@ namespace tunum
         template <class CharT, class Traits = std::char_traits<CharT>>
         constexpr fmpint(std::basic_string_view<CharT, Traits> num_str) noexcept
         {
-            // 保存領域の境界にまたがる可能性のある10進数の桁かどうか判定
-            constexpr auto get_bound = [](const std::size_t digits) {
-                for (std::size_t i = 0; i < data_length; i++) {
-                    const auto bound = std::size_t(i * base_data_digits2 * log10_2) + 1;
-                    if (bound >= digits)
-                        return std::pair{i && bound == digits, i};
-                }
-                return std::pair{false, std::size_t{}};
-            };
-
             constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
                 if (c >= code_zero && c < code_zero + 10)
                     return int(c - code_zero);
@@ -179,24 +169,18 @@ namespace tunum
                     num = char_to_num(v, '0', 'a', 'A');
                 return mul_v *= num;
             };
-    
-            base_data_t item = 1;
-            for (std::size_t i = 0; i < num_str.length(); i++) {
-                const auto digits = i + 1;
-                const auto [is_bound, buf_i] = get_bound(digits);
-                if (max_digits10 < digits)
-                    break;
-                if (is_bound) {
-                    auto large_item = fmpint{};
-                    large_item[buf_i - 1] = item;
-                    (*this) += inner_mul(large_item, num_str[i]);
-                    item = 1;
-                }
-                else {
-                    (*this)[buf_i] += inner_mul(item, num_str[i]);
-                    item *= 10;
-                }
+
+            const auto table_10_n = _calc_table_10_n();
+            auto item = fmpint{1};
+            std::size_t i = 0;
+            const auto input_digits = num_str.length();
+            if constexpr (!std::same_as<base_data_t, half_fmpint>) {
+                i = (std::min)(input_digits, half_fmpint::max_digits10);
+                const auto substr_begin_pos = input_digits - i;
+                    this->lower = half_fmpint{num_str.substr(substr_begin_pos)};
             }
+            for (; i < input_digits && i <= max_digits10; i++)
+                (*this) += inner_mul(table_10_n[i], num_str[input_digits - 1 - i]);
         }
 
         // -------------------------------------------
@@ -498,6 +482,17 @@ namespace tunum
                     return half_fmpint::_add(l, r);
             };
 
+            const auto is_zero_v1_l = !v1.lower;
+            const auto is_zero_v1_u = !v1.upper;
+            const auto is_zero_v2_l = !v2.lower;
+            const auto is_zero_v2_u = !v2.upper;
+            if (is_zero_v1_l && is_zero_v1_u)
+                return next_size_fmpint{v2};
+            if (is_zero_v2_l && is_zero_v2_u)
+                return next_size_fmpint{v1};
+            if (is_zero_v1_l && is_zero_v2_u || is_zero_v1_u && is_zero_v2_l)
+                return next_size_fmpint{v1} |= v2;
+
             // 2 桁の筆算のような感じ
             const auto l = inner_add(v1.lower, v2.lower);
             const auto u = inner_add(v1.upper, v2.upper);
@@ -520,11 +515,25 @@ namespace tunum
                     return half_fmpint::_mul(l, r);
             };
 
+            const auto is_zero_v1_l = !v1.lower;
+            const auto is_zero_v1_u = !v1.upper;
+            const auto is_zero_v2_l = !v2.lower;
+            const auto is_zero_v2_u = !v2.upper;
+            if (is_zero_v1_l && is_zero_v1_u || is_zero_v2_l && is_zero_v2_u)
+                return next_size_fmpint{0};
+
             // たすき掛け
-            return next_size_fmpint{inner_mul(v1.lower, v2.lower)}
-                += (next_size_fmpint{inner_mul(v1.upper, v2.lower)} <<= (size * 8 / 2))
-                += (next_size_fmpint{inner_mul(v1.lower, v2.upper)} <<= (size * 8 / 2))
-                += (next_size_fmpint{inner_mul(v1.upper, v2.upper)} <<= (size * 8));
+            auto r = next_size_fmpint{};
+            if (!is_zero_v1_l && !is_zero_v2_l)
+                r.lower = inner_mul(v1.lower, v2.lower);
+            if (!is_zero_v1_u && !is_zero_v2_u)
+                r.upper = inner_mul(v1.upper, v2.upper);
+            auto r2 = next_size_fmpint{};
+            if (!is_zero_v1_u && !is_zero_v2_l)
+                r2.lower = inner_mul(v1.upper, v2.lower);
+            if (!is_zero_v1_l && !is_zero_v2_u)
+                r2 += inner_mul(v1.lower, v2.upper);
+            return r += (r2 <<= (size * 8 / 2));
         }
 
         // 割り算の商と余りのペアを返却
@@ -532,8 +541,10 @@ namespace tunum
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
             // 重いので計算せずとも自明なものはここではじいておく
-            if (!v2) throw std::invalid_argument{"0 div."};
-            if (!v1) return std::array{fmpint{}, fmpint{}};
+            if (!v2)
+                throw std::invalid_argument{"0 div."};
+            if (!v1)
+                return std::array{fmpint{}, fmpint{}};
             if (v1._compare(v2) < 0)
                 return std::array{fmpint{}, fmpint{v1}};
             if (v2._compare(fmpint{1}) == 0)
@@ -573,6 +584,25 @@ namespace tunum
                 }
                 return std::array{quo, rem};
             }
+        }
+
+        // 10 の n乗をあらかじめ計算しておく
+        static constexpr auto _calc_table_10_n()
+        {
+            std::array<fmpint, max_digits10 + 1> table{};
+            int i = 1;
+            table[0] = 1;
+            if constexpr (!std::same_as<base_data_t, half_fmpint>) {
+                constexpr auto half_table = half_fmpint::_calc_table_10_n();
+                for (; i <= half_fmpint::max_digits10; i++)
+                    table[i] = half_table[i];
+                for (const auto begin_i = half_fmpint::max_digits10; i <= max_digits10; i++)
+                    table[i] = fmpint{table[half_fmpint::max_digits10]} *= table[i - begin_i];
+            }
+            else
+                for (; i <= max_digits10; i++)
+                    table[i] = fmpint{table[i - 1]} * 10;
+            return table;
         }
     };
 
