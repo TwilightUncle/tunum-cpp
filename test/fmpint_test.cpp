@@ -258,6 +258,7 @@ TEST(TunumFmpintTest, BitOperationTest)
 
 TEST(TunumFmpintTest, OperatorTest)
 {
+    // 加算
     constexpr auto v1 = int128_t_2{2} + int64_t_2{1};
     constexpr auto v2 = int64_t_2{2} + int128_t_2{1};
     static_assert(std::same_as<decltype(v1), decltype(v2)>, "expect same type.");
@@ -284,6 +285,29 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v5[5], ~std::uint32_t{});
     EXPECT_EQ(v5[6], ~std::uint32_t{});
     EXPECT_EQ(v5[7], 1);
+
+    // 減算
+    constexpr auto v6 = v3 - 2;
+    EXPECT_EQ(v6[0], ~std::uint32_t{});
+    EXPECT_EQ(v6[1], 0);
+    EXPECT_EQ(v6[2], 0);
+    EXPECT_EQ(v6[3], 0);
+
+    constexpr auto v7 = v5 - tunum::int128_t{v5};
+    EXPECT_EQ(v7[0], 0);
+    EXPECT_EQ(v7[1], 0);
+    EXPECT_EQ(v7[2], 0);
+    EXPECT_EQ(v7[3], 0);
+    EXPECT_EQ(v7[4], ~std::uint32_t{});
+    EXPECT_EQ(v7[5], ~std::uint32_t{});
+    EXPECT_EQ(v7[6], ~std::uint32_t{});
+    EXPECT_EQ(v7[7], 1);
+
+    constexpr auto v8 = tunum::fmpint<8>{v5} - tunum::int128_t{~std::uint32_t{} - 1};
+    EXPECT_EQ(v8[0], 0);
+    EXPECT_EQ(v8[1], ~std::uint32_t{});
+    EXPECT_EQ(v8[2], 0);
+    EXPECT_EQ(v8[3], 0);
 }
 
 // TEST(TunumFmpintTest, StringConstructorTest)

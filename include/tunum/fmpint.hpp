@@ -317,7 +317,7 @@ namespace tunum
         constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = _add(*this, fmpint{v}); }
 
         // 減算代入
-        constexpr auto& operator-=(const TuIntegral auto& v) noexcept { return *this += -v; }
+        constexpr auto& operator-=(const TuIntegral auto& v) noexcept { return *this += -fmpint{v}; }
 
         // 乗算代入
         constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _mul(*this, fmpint{v}); }
