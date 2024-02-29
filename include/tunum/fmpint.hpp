@@ -4,9 +4,12 @@
 #include <bit>
 #include <concepts>
 #include <array>
+#include <tuple>
 #include <string_view>
 #include <stdexcept>
 #include <compare>
+#include <limits>
+#include <numbers>
 
 namespace tunum
 {
@@ -73,6 +76,9 @@ namespace tunum
         // メンバ定義
         // -------------------------------------------
 
+        // 進数変換等のサイズ計算用
+        static constexpr auto log10_2 = std::numbers::ln2 / std::numbers::ln10;
+
         // 内部的に扱うサイズは2の累乗に統一する
         using base_data_t = std::uint32_t;
         static constexpr std::size_t min_size = sizeof(base_data_t) << 1;
@@ -80,8 +86,9 @@ namespace tunum
         static constexpr std::size_t half_size = size >> 1;
         static constexpr std::size_t data_length = size / sizeof(base_data_t);
 
-        static constexpr std::size_t base_data_bit_width = sizeof(base_data_t) * 8;
-        static constexpr std::size_t max_bit_width = size * 8;
+        static constexpr std::size_t base_data_digits2 = std::numeric_limits<base_data_t>::digits;
+        static constexpr std::size_t max_digits2 = size * 8;
+        static constexpr std::size_t max_digits10 = std::size_t(max_digits2 * log10_2) + 1;
 
         using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1)>;
         using half_fmpint = std::conditional_t<
@@ -129,9 +136,68 @@ namespace tunum
             : fmpint(v.lower)
         {}
 
+        // c言語風文字列より初期化
+        template <class CharT>
+        constexpr fmpint(const CharT* num_str) noexcept
+            : fmpint(std::basic_string_view<CharT>{num_str})
+        {}
+
         // basic_string_viewあたりを引数として、文字列からの実装を想定
-        // template <class CharT, class Traits = std::char_traits<CharT>>
-        // constexpr fmpint()
+        template <class CharT, class Traits = std::char_traits<CharT>>
+        constexpr fmpint(std::basic_string_view<CharT, Traits> num_str) noexcept
+        {
+            // 保存領域の境界にまたがる可能性のある10進数の桁かどうか判定
+            constexpr auto get_bound = [](const std::size_t digits) {
+                for (std::size_t i = 0; i < data_length; i++) {
+                    const auto bound = std::size_t(i * base_data_digits2 * log10_2) + 1;
+                    if (bound >= digits)
+                        return std::pair{i && bound == digits, i};
+                }
+                return std::pair{false, std::size_t{}};
+            };
+
+            constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
+                if (c >= code_zero && c < code_zero + 10)
+                    return int(c - code_zero);
+                if (c >= code_a && c < code_a + 6)
+                    return int(c - code_a + 10);
+                return int(c - code_A + 10);
+            };
+
+            // 文字コードから数値への変換と掛け算実施
+            constexpr auto inner_mul = [&char_to_num](auto mul_v, CharT v) {
+                auto num = 0;
+                if constexpr (std::same_as<CharT, wchar_t>)
+                    num = char_to_num(v, L'0', L'a', L'A');
+                else if constexpr (std::same_as<CharT, char8_t>)
+                    num = char_to_num(v, u8'0', u8'a', u8'A');
+                else if constexpr (std::same_as<CharT, char16_t>)
+                    num = char_to_num(v, u'0', u'a', u'A');
+                else if constexpr (std::same_as<CharT, char32_t>)
+                    num = char_to_num(v, U'0', U'a', U'A');
+                else
+                    num = char_to_num(v, '0', 'a', 'A');
+                return mul_v *= num;
+            };
+    
+            base_data_t item = 1;
+            for (std::size_t i = 0; i < num_str.length(); i++) {
+                const auto digits = i + 1;
+                const auto [is_bound, buf_i] = get_bound(digits);
+                if (max_digits10 < digits)
+                    break;
+                if (is_bound) {
+                    auto large_item = fmpint{};
+                    large_item[buf_i - 1] = item;
+                    (*this) += inner_mul(large_item, num_str[i]);
+                    item = 1;
+                }
+                else {
+                    (*this)[buf_i] += inner_mul(item, num_str[i]);
+                    item *= 10;
+                }
+            }
+        }
 
         // -------------------------------------------
         // 要素アクセス
@@ -178,9 +244,8 @@ namespace tunum
         // 左シフト
         constexpr auto& operator<<=(std::size_t n) noexcept
         {
-            const auto shift_mod = n % base_data_bit_width;
-            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
-            const auto shift_mul = n / base_data_bit_width;
+            const auto shift_mod = n % base_data_digits2;
+            const auto shift_mul = n / base_data_digits2;
 
             if (data_length <= shift_mul)
                 return *this = fmpint{};
@@ -188,18 +253,18 @@ namespace tunum
             *this = this->rotate_l(n);
 
             // ローテート演算で回ってきた部分を除去
-            for (std::size_t i = 0; i< shift_mul; i++)
+            for (std::size_t i = 0; i < shift_mul; i++)
                 (*this)[i] = 0;
-            ((*this)[shift_mul] >>= shift_com) <<= shift_com;
+            (*this)[shift_mul] >>= shift_mod;
+            (*this)[shift_mul] <<= shift_mod;
             return *this;
         }
 
         // 右シフト
         constexpr auto& operator>>=(std::size_t n) noexcept
         {
-            const auto shift_mod = n % base_data_bit_width;
-            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
-            const auto shift_mul = n / base_data_bit_width;
+            const auto shift_mod = n % base_data_digits2;
+            const auto shift_mul = n / base_data_digits2;
 
             if (data_length <= shift_mul)
                 return *this = fmpint{};
@@ -207,9 +272,10 @@ namespace tunum
             *this = this->rotate_r(n);
 
             // ローテート演算で回ってきた部分を除去
-            for (std::size_t i = shift_mul + 1; i < data_length; i++)
-                (*this)[i] = 0;
-            ((*this)[shift_mul] <<= shift_com) >>= shift_com;
+            for (std::size_t i = 0; i < shift_mul; i++)
+                (*this)[data_length - 1 - i] = 0;
+            (*this)[shift_mul] <<= shift_mod;
+            (*this)[shift_mul] >>= shift_mod;
             return *this;
         }
 
@@ -280,9 +346,9 @@ namespace tunum
             auto this_clone = fmpint{*this};
             if (!n) return this_clone;
 
-            const auto shift_mod = n % base_data_bit_width;
-            const auto i_diff = n / base_data_bit_width;
-            const auto shift_com = (base_data_bit_width - shift_mod) % base_data_bit_width;
+            const auto shift_mod = n % base_data_digits2;
+            const auto i_diff = n / base_data_digits2;
+            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
 
             for (std::size_t i = 0; i < data_length; i++) {
                 auto& elem = this_clone[(i + i_diff) % data_length];
@@ -294,7 +360,7 @@ namespace tunum
         }
 
         // ビット右ローテーション
-        constexpr auto rotate_r(std::size_t n) const noexcept { return this->rotate_l(max_bit_width - (n % max_bit_width)); }
+        constexpr auto rotate_r(std::size_t n) const noexcept { return this->rotate_l(max_digits2 - (n % max_digits2)); }
 
         // 左側に連続している 0 ビットの数を返却
         constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(false, true); }
@@ -347,27 +413,27 @@ namespace tunum
 
             const auto first_bit_cnt = inner_f(is_begin_l ? this->upper : this->lower, bit, is_begin_l); 
             // フルビットじゃなければ連続していないのでその場で返却
-            return first_bit_cnt != (base_data_bit_width * data_length / 2)
+            return first_bit_cnt != (base_data_digits2 * data_length / 2)
                 ? first_bit_cnt
                 : first_bit_cnt + inner_f(is_begin_l ? this->lower : this->upper, bit, is_begin_l);
         }
 
         // 格納値を表現するのに必要なビット幅を返却
-        constexpr auto get_bit_width() const noexcept { return max_bit_width - this->countl_zero_bit(); }
+        constexpr auto get_bit_width() const noexcept { return max_digits2 - this->countl_zero_bit(); }
 
         // 指定位置のビットを取得
         constexpr auto get_bit(std::size_t i) const
         {
-            const auto base_data_index = i / base_data_bit_width;
-            const auto bit_pos = i % base_data_bit_width;
+            const auto base_data_index = i / base_data_digits2;
+            const auto bit_pos = i % base_data_digits2;
             return bool(this->at(base_data_index) & (base_data_t{1} << bit_pos));
         }
 
         // 指定位置のビットを変更
         constexpr void set_bit(std::size_t i, bool value)
         {
-            const auto base_data_index = i / base_data_bit_width;
-            const auto bit_pos = i % base_data_bit_width;
+            const auto base_data_index = i / base_data_digits2;
+            const auto bit_pos = i % base_data_digits2;
             const auto single_bit = base_data_t{1} << bit_pos;
             if (!value)
                 this->at(base_data_index) &= (~single_bit);

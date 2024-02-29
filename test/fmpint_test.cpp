@@ -141,6 +141,25 @@ TEST(TunumFmpintTest, BitRotateTest)
     EXPECT_EQ(bit256_2[5], bit32_2);
     EXPECT_EQ(bit256_2[6], bit32_1);
     EXPECT_EQ(bit256_2[7], bit32_4);
+
+    // シフト演算子
+    constexpr auto bit64_4 = bit64_1 << 33;
+    EXPECT_EQ(bit64_4[0], 0);
+    EXPECT_EQ(bit64_4[1], 0b0001'1111'1111'1110'0000'0000'0000'0000u);
+    constexpr auto bit64_5 = bit64_4 >> 60;
+    EXPECT_EQ(bit64_5[0], 1);
+    EXPECT_EQ(bit64_5[1], 0);
+
+    const auto bit128_6 = bit128_4 << (64 + 4);
+    EXPECT_EQ(bit128_6[0], 0);
+    EXPECT_EQ(bit128_6[1], 0);
+    EXPECT_EQ(bit128_6[2], 0b0000'0000'1111'1111'1111'1111'1111'0000u);
+    EXPECT_EQ(bit128_6[3], 0b0000'0000'0000'0000'1111'1111'1111'1111u);
+    const auto bit128_7 = bit128_6 >> (32 * 3 + 4 * 3);
+    EXPECT_EQ(bit128_7[0], 0b1111u);
+    EXPECT_EQ(bit128_7[1], 0);
+    EXPECT_EQ(bit128_7[2], 0);
+    EXPECT_EQ(bit128_7[3], 0);
 }
 
 // const 修飾のついたメンバ関数の演算子オーバーロードテスト
@@ -169,13 +188,6 @@ TEST(TunumFmpintTest, ConstMemberOperatorTest)
     EXPECT_EQ(completion_3[1], bit32_3);
     EXPECT_EQ(completion_3[2], bit32_3);
     EXPECT_EQ(completion_3[3], bit32_3);
-
-    constexpr auto v1 = int128_t_2{2} + int64_t_2{1};
-    constexpr auto v2 = int64_t_2{2} + int128_t_2{1};
-    static_assert(std::same_as<decltype(v1), decltype(v2)>, "expect same type.");
-    
-    for (int i = 0; i < 4; i++)
-        ASSERT_EQ(v1.at(i), v2.at(i));
 }
 
 TEST(TunumFmpintTest, BitOperationTest)
@@ -243,3 +255,43 @@ TEST(TunumFmpintTest, BitOperationTest)
     EXPECT_EQ(bit128_1[0], 1 << 5);
     EXPECT_EQ(bit128_1[1], 1 << (43 - 32));
 }
+
+TEST(TunumFmpintTest, OperatorTest)
+{
+    constexpr auto v1 = int128_t_2{2} + int64_t_2{1};
+    constexpr auto v2 = int64_t_2{2} + int128_t_2{1};
+    static_assert(std::same_as<decltype(v1), decltype(v2)>, "expect same type.");
+    
+    for (int i = 0; i < 4; i++)
+        ASSERT_EQ(v1.at(i), v2.at(i));
+
+    constexpr auto v3 = tunum::int128_t{~std::uint32_t{}} + tunum::int128_t{2};
+    EXPECT_EQ(v3[0], 1);
+    EXPECT_EQ(v3[1], 1);
+    EXPECT_EQ(v3[2], 0);
+    EXPECT_EQ(v3[3], 0);
+    constexpr auto v4 = tunum::int128_t{~std::uint32_t{}} + ~std::uint32_t{};
+    EXPECT_EQ(v4[0], ~std::uint32_t{} - 1);
+    EXPECT_EQ(v4[1], 1);
+    EXPECT_EQ(v4[2], 0);
+    EXPECT_EQ(v4[3], 0);
+    constexpr auto v5 = (~tunum::int256_t{} >> 32) + (~tunum::int256_t{} >> 32);
+    EXPECT_EQ(v5[0], ~std::uint32_t{} - 1);
+    EXPECT_EQ(v5[1], ~std::uint32_t{});
+    EXPECT_EQ(v5[2], ~std::uint32_t{});
+    EXPECT_EQ(v5[3], ~std::uint32_t{});
+    EXPECT_EQ(v5[4], ~std::uint32_t{});
+    EXPECT_EQ(v5[5], ~std::uint32_t{});
+    EXPECT_EQ(v5[6], ~std::uint32_t{});
+    EXPECT_EQ(v5[7], 1);
+}
+
+// TEST(TunumFmpintTest, StringConstructorTest)
+// {
+//     constexpr auto uint32_max_s = L"4294967295";
+//     constexpr auto uint32_over_s = u8"4294967296";
+
+//     constexpr auto v1 = tunum::int128_t{"0"};
+//     EXPECT_FALSE(bool(v1));
+//     constexpr auto v2 = tunum::int256_t{uint32_max_s};
+// }
