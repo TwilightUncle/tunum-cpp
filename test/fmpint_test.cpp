@@ -13,7 +13,6 @@ constexpr auto bit64_lit_1 = 0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111
 
 TEST(TunumFmpintTest, ConstructorTest)
 {
-
     ASSERT_EQ(tunum::int128_t::size, int128_t_2::size);
     ASSERT_EQ(int64_t_1::size, int64_t_2::size);
 
