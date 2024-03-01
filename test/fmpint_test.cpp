@@ -383,7 +383,9 @@ TEST(TunumFmpintTest, StringConstructorTest)
 
     constexpr auto v1 = tunum::int128_t{"0"};
     EXPECT_FALSE(bool(v1));
-    EXPECT_EQ(tunum::int256_t{uint32_max_s}, ~std::uint32_t{});
+    constexpr auto v2 = tunum::int256_t{uint32_max_s};
+    EXPECT_EQ(v2, ~std::uint32_t{});
+    // constexpr auto v3 = tunum::int512_t{uint32_over_s};
     EXPECT_EQ(tunum::int512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
     EXPECT_EQ(tunum::int128_t{uint128_max_s}, ~tunum::int128_t{});
     EXPECT_EQ(tunum::int128_t{uint128_over_s}, 0);

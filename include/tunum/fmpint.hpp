@@ -146,16 +146,16 @@ namespace tunum
         template <class CharT, class Traits = std::char_traits<CharT>>
         constexpr fmpint(std::basic_string_view<CharT, Traits> num_str) noexcept
         {
-            constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
-                if (c >= code_zero && c < code_zero + 10)
-                    return int(c - code_zero);
-                if (c >= code_a && c < code_a + 6)
-                    return int(c - code_a + 10);
-                return int(c - code_A + 10);
-            };
-
             // 文字コードから数値への変換と掛け算実施
-            constexpr auto inner_mul = [&char_to_num](auto mul_v, CharT v) {
+            constexpr auto inner_mul = [](auto mul_v, CharT v) {
+                constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
+                    if (c >= code_zero && c < code_zero + 10)
+                        return int(c - code_zero);
+                    if (c >= code_a && c < code_a + 6)
+                        return int(c - code_a + 10);
+                    return int(c - code_A + 10);
+                };
+
                 auto num = 0;
                 if constexpr (std::same_as<CharT, wchar_t>)
                     num = char_to_num(v, L'0', L'a', L'A');
