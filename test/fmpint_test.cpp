@@ -371,6 +371,8 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v11[15], 0);
 }
 
+using namespace tunum::literals;
+
 TEST(TunumFmpintTest, StringConstructorTest)
 {
     constexpr auto uint32_max_s = L"4294967295";
@@ -388,4 +390,8 @@ TEST(TunumFmpintTest, StringConstructorTest)
     EXPECT_EQ(tunum::int512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
     EXPECT_EQ(tunum::int128_t{uint128_max_s}, ~tunum::int128_t{});
     EXPECT_EQ(tunum::int128_t{uint128_over_s}, 0);
+
+    constexpr auto fmp_int_v = 340282366920938463463374607431768211455_fmp;
 }
+
+
