@@ -22,6 +22,7 @@ namespace tunum
     // 内部的な演算方法は組み込みの整数に準拠
     // TODO: 符号の実装
     // TODO: 文字列からの構築に10新リテラル以外も選べるようにする
+    // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes>
     struct fmpint
     {
@@ -427,33 +428,38 @@ namespace tunum
         // 加算の際にデータの損失が起こらないよう、一つ上のサイズの整数にして返却
         static constexpr auto _add(const fmpint& v1, const fmpint& v2) noexcept
         {
-            using next_size_fmpint = fmpint<(size << 1)>;
-            constexpr auto inner_add = [](const half_fmpint& l, const half_fmpint& r) {
+            constexpr auto inner_add = [](const half_fmpint& l, const half_fmpint& r, bool is_zero_l, bool is_zero_r) -> half_fmpint {
+                if (is_zero_r)
+                    return l;
+                if (is_zero_l)
+                    return r;
                 if constexpr (std::same_as<base_data_t, half_fmpint>)
-                    return fmpint{std::uint64_t(l) + std::uint64_t(r)};
+                    return std::uint64_t(l) + std::uint64_t(r);
                 else
                     return half_fmpint::_add(l, r);
+            };
+
+            // 加算実行時、桁上りが発生するか判定
+            constexpr auto is_carry = [](const half_fmpint& l, const half_fmpint& r) {
+                // l のビット反転より r が大きいとき、桁上り発生
+                return (~l) < r;
             };
 
             const auto is_zero_v1_l = !v1.lower;
             const auto is_zero_v1_u = !v1.upper;
             const auto is_zero_v2_l = !v2.lower;
             const auto is_zero_v2_u = !v2.upper;
-            if (is_zero_v1_l && is_zero_v1_u)
-                return next_size_fmpint{v2};
-            if (is_zero_v2_l && is_zero_v2_u)
-                return next_size_fmpint{v1};
             if (is_zero_v1_l && is_zero_v2_u || is_zero_v1_u && is_zero_v2_l)
-                return next_size_fmpint{v1} |= v2;
+                return fmpint{v1} |= v2;
 
             // 2 桁の筆算のような感じ
-            const auto l = inner_add(v1.lower, v2.lower);
-            const auto u = inner_add(v1.upper, v2.upper);
-            const auto carry = inner_add(l.upper, u.lower);
-            auto next_lower = fmpint{l.lower};
-            next_lower.upper = carry.lower;
-            auto r = next_size_fmpint{next_lower};
-            r.upper = inner_add(u.upper, carry.upper);
+            auto r = fmpint{};
+            r.lower = inner_add(v1.lower, v2.lower, is_zero_v1_l, is_zero_v2_l);
+            r.upper = inner_add(v1.upper, v2.upper, is_zero_v1_u, is_zero_v2_u);
+
+            // 桁上りがある場合
+            if (is_carry(v1.lower, v2.lower))
+                r.upper = inner_add(r.upper, 1, false, false);
             return r;
         }
 
@@ -481,6 +487,7 @@ namespace tunum
                 r.lower = inner_mul(v1.lower, v2.lower);
             if (!is_zero_v1_u && !is_zero_v2_u)
                 r.upper = inner_mul(v1.upper, v2.upper);
+            // 下の桁と上の桁をクロスする部分
             auto r2 = next_size_fmpint{};
             if (!is_zero_v1_u && !is_zero_v2_l)
                 r2.lower = inner_mul(v1.upper, v2.lower);
