@@ -439,12 +439,6 @@ namespace tunum
                     return half_fmpint::_add(l, r);
             };
 
-            // 加算実行時、桁上りが発生するか判定
-            constexpr auto is_carry = [](const half_fmpint& l, const half_fmpint& r) {
-                // l のビット反転より r が大きいとき、桁上り発生
-                return (~l) < r;
-            };
-
             const auto is_zero_v1_l = !v1.lower;
             const auto is_zero_v1_u = !v1.upper;
             const auto is_zero_v2_l = !v2.lower;
@@ -458,8 +452,8 @@ namespace tunum
             r.upper = inner_add(v1.upper, v2.upper, is_zero_v1_u, is_zero_v2_u);
 
             // 桁上りがある場合
-            if (is_carry(v1.lower, v2.lower))
-                r.upper = inner_add(r.upper, 1, false, false);
+            if ((~v1.lower) < v2.lower)
+                r.upper = inner_add(r.upper, 1, !r.upper, false);
             return r;
         }
 
@@ -496,7 +490,7 @@ namespace tunum
             return r += (r2 <<= (size * 8 / 2));
         }
 
-        // 割り算の商と余りのペアを返却
+        // 割り算の商と余りの2要素配列を返却
         // v1 と v2の差が大きいほど計算量も増える
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
@@ -505,11 +499,11 @@ namespace tunum
                 throw std::invalid_argument{"0 div."};
             if (!v1)
                 return std::array{fmpint{}, fmpint{}};
-            if (v1._compare(v2) < 0)
+            if (v1 < v2)
                 return std::array{fmpint{}, fmpint{v1}};
-            if (v2._compare(fmpint{1}) == 0)
+            if (v2 == 1)
                 return std::array{fmpint{v1}, fmpint{}};
-                
+
             if constexpr (std::same_as<base_data_t, half_fmpint>)
                 // 組み込みの演算子使えるならそっち優先
                 return std::array{
@@ -537,7 +531,7 @@ namespace tunum
                 auto quo = fmpint{};
                 for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
                     const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
-                    if (rem._compare(shifted_v2) >= 0) {
+                    if (rem >= shifted_v2) {
                         quo.set_bit(v2_lshift_cnt - i, true);
                         rem -= shifted_v2;
                     }
