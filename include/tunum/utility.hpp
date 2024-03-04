@@ -18,12 +18,17 @@ namespace tunum
     template <class T>
     concept TuArithmetic
         = requires (T v) {
+            { v } -> std::totally_ordered;
             { v } -> std::totally_ordered_with<int>;
             { v.operator-() } -> std::convertible_to<T>;
             { v + std::declval<int>() } -> std::convertible_to<T>;
+            { v + std::declval<T>() } -> std::convertible_to<T>;
             { v - std::declval<int>() } -> std::convertible_to<T>;
+            { v - std::declval<T>() } -> std::convertible_to<T>;
             { v * std::declval<int>() } -> std::convertible_to<T>;
+            { v * std::declval<T>() } -> std::convertible_to<T>;
             { v / std::declval<int>() } -> std::convertible_to<T>;
+            { v / std::declval<T>() } -> std::convertible_to<T>;
         }
         || std::is_arithmetic_v<T>;
 
