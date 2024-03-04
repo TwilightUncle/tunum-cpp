@@ -14,10 +14,13 @@ namespace tunum::literals
     template <char... IntegralLiteral>
     inline constexpr auto operator"" _fmp()
     {
-        constexpr auto byte_size = ::tunum::calc_integral_storable_byte(sizeof...(IntegralLiteral));
-        using ret_t = fmpint<byte_size>;
+        using min_fmpint = fmpint<8>;
+        constexpr auto byte_size = ::tunum::alignment(
+            ::tunum::calc_integral_storable_byte(sizeof...(IntegralLiteral)) * 8,
+            min_fmpint::base_data_digits2
+        ) * min_fmpint::base_data_digits2 / 8;
         constexpr char s[] = { IntegralLiteral..., '\0' };
-        return ::tunum::fmpint<byte_size>{s};
+        return fmpint<byte_size>{s};
     }
 
     // // 符号あり 2 進数リテラル
