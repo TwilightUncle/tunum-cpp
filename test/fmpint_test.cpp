@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <tunum/fmpint.hpp>
 
-using int128_t_2 = tunum::fmpint<15>;
-using int64_t_1 = tunum::fmpint<0>;
-using int64_t_2 = tunum::fmpint<8>;
+using uint128_t_2 = tunum::fmpint<15, false>;
+using uint64_t_1 = tunum::fmpint<0, false>;
+using uint64_t_2 = tunum::fmpint<8, false>;
 
 constexpr auto bit32_1 = 0b0000'1111'1111'1111'1111'0000'0000'1111u;
 constexpr auto bit32_2 = 0b0000'1111'1111'1111'0000'0000'0000'0000u;
@@ -13,23 +13,23 @@ constexpr auto bit64_lit_1 = 0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111
 
 TEST(TunumFmpintTest, ConstructorTest)
 {
-    ASSERT_EQ(tunum::int128_t::size, int128_t_2::size);
-    ASSERT_EQ(int64_t_1::size, int64_t_2::size);
+    ASSERT_EQ(tunum::uint128_t::size, uint128_t_2::size);
+    ASSERT_EQ(uint64_t_1::size, uint64_t_2::size);
 
     // デフォルトコンストラクタ呼び出しの確認
-    constexpr auto v1 = int128_t_2{};
-    constexpr auto v2 = int64_t_2{};
+    constexpr auto v1 = uint128_t_2{};
+    constexpr auto v2 = uint64_t_2{};
 
     // 組み込み整数による初期化
-    constexpr auto v3 = int128_t_2{std::int32_t(1234)};
-    constexpr auto v4 = int64_t_2{std::int32_t(-5678)};
-    constexpr auto v5 = int128_t_2{~std::uint64_t{}};
-    constexpr auto v6 = int64_t_2{~std::uint64_t{} << 2};
+    constexpr auto v3 = uint128_t_2{std::int32_t(1234)};
+    constexpr auto v4 = uint64_t_2{std::int32_t(-5678)};
+    constexpr auto v5 = uint128_t_2{~std::uint64_t{}};
+    constexpr auto v6 = uint64_t_2{~std::uint64_t{} << 2};
 
     ASSERT_EQ(v3.lower.lower, 1234);
     ASSERT_EQ(v3.lower.upper, 0);
-    ASSERT_EQ(v4.lower, 5678);
-    ASSERT_EQ(v4.upper, 0);
+    ASSERT_EQ(v4.lower, -5678);
+    ASSERT_EQ(v4.upper, bit32_4);
     ASSERT_TRUE(v5.lower.lower == bit32_4);
     ASSERT_TRUE(v5.lower.upper == bit32_4);
     ASSERT_TRUE(v5.upper.lower == 0);
@@ -37,24 +37,24 @@ TEST(TunumFmpintTest, ConstructorTest)
     ASSERT_EQ(v6.upper, bit32_4);
 
     // fmpintによる初期化
-    constexpr auto v7 = int128_t_2{v3};         // 同じ型
-    constexpr auto v8 = tunum::int128_t{v3};    // Bytesが異なるが内部的に同じ表現の型
-    constexpr auto v9 = int128_t_2{v4};         // 小さいサイズ -> 大きいサイズ
-    constexpr auto v10 = int64_t_1{v5};         // 大きいサイズ -> 小さいサイズ
+    constexpr auto v7 = uint128_t_2{v3};         // 同じ型
+    constexpr auto v8 = tunum::uint128_t{v3};    // Bytesが異なるが内部的に同じ表現の型
+    constexpr auto v9 = uint128_t_2{v4};         // 小さいサイズ -> 大きいサイズ
+    constexpr auto v10 = uint64_t_1{v5};         // 大きいサイズ -> 小さいサイズ
 
     ASSERT_EQ(v7.lower.lower, 1234);
     ASSERT_EQ(v7.lower.upper, 0);
     ASSERT_EQ(v8.lower.lower, 1234);
     ASSERT_EQ(v8.lower.upper, 0);
-    ASSERT_EQ(v9.lower.lower, 5678);
-    ASSERT_EQ(v9.lower.upper, 0);
+    ASSERT_EQ(v9.lower.lower, -5678);
+    ASSERT_EQ(v9.lower.upper, bit32_4);
     ASSERT_EQ(v10.lower, bit32_4);
     ASSERT_EQ(v10.upper, bit32_4);
 }
 
 TEST(TunumFmpintTest, ElementAccessTest)
 {
-    auto v1 = tunum::int128_t{(~std::uint64_t{}) << 2};
+    auto v1 = tunum::uint128_t{(~std::uint64_t{}) << 2};
     v1.upper = 5;
 
     ASSERT_EQ(v1.at(0), bit32_4 << 2);
@@ -74,7 +74,7 @@ TEST(TunumFmpintTest, ElementAccessTest)
 
 TEST(TunumFmpintTest, BitRotateTest)
 {
-    auto bit128_1 = tunum::int128_t{};
+    auto bit128_1 = tunum::uint128_t{};
     bit128_1[0] = bit32_1;
     bit128_1[1] = bit32_2;
     bit128_1[2] = bit32_3;
@@ -113,7 +113,7 @@ TEST(TunumFmpintTest, BitRotateTest)
     EXPECT_EQ(bit128_5[3], bit32_4);
 
     // constexpr でも動くか確認
-    constexpr auto bit64_1 = tunum::fmpint<8>{0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111'1111'1111'0000'0000'0000'0000u};
+    constexpr auto bit64_1 = uint64_t_2{0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111'1111'1111'0000'0000'0000'0000u};
     constexpr auto bit64_2 = bit64_1.rotate_l(48);
     EXPECT_EQ(bit64_2[0], 0b1111'0000'0000'1111'0000'1111'1111'1111u);
     EXPECT_EQ(bit64_2[1], 0b0000'0000'0000'0000'0000'1111'1111'1111u);
@@ -121,7 +121,7 @@ TEST(TunumFmpintTest, BitRotateTest)
     EXPECT_EQ(bit64_3[0], bit32_2);
     EXPECT_EQ(bit64_3[1], bit32_1);
 
-    auto bit256_1 = tunum::int256_t{};
+    auto bit256_1 = tunum::uint256_t{};
     bit256_1[0] = bit32_1;
     bit256_1[1] = bit32_2;
     bit256_1[2] = bit32_3;
@@ -165,20 +165,20 @@ TEST(TunumFmpintTest, BitRotateTest)
 // ※内部的に四則演算のオーバーロードを用いるものを除く
 TEST(TunumFmpintTest, ConstOperatorTest)
 {
-    constexpr auto v1 = bool(tunum::int128_t{});
+    constexpr auto v1 = bool(tunum::uint128_t{});
     EXPECT_FALSE(v1);
-    constexpr auto v2 = !tunum::int128_t{};
+    constexpr auto v2 = !tunum::uint128_t{};
     EXPECT_TRUE(v2);
-    EXPECT_TRUE((bool)tunum::int256_t{1});
-    EXPECT_FALSE(!tunum::int256_t{1});
+    EXPECT_TRUE((bool)tunum::uint256_t{1});
+    EXPECT_FALSE(!tunum::uint256_t{1});
 
-    constexpr auto completion_1 = ~int128_t_2{};
+    constexpr auto completion_1 = ~uint128_t_2{};
     for (int i = 0; i < 4; i++)
         EXPECT_EQ(completion_1.at(i), ~std::uint32_t{});
     EXPECT_TRUE(static_cast<bool>(completion_1));
     EXPECT_FALSE(!completion_1);
 
-    constexpr auto completion_2 = ~tunum::int128_t{bit32_4};
+    constexpr auto completion_2 = ~tunum::uint128_t{bit32_4};
     EXPECT_EQ(completion_2[0], bit32_3);
     EXPECT_EQ(completion_2[1], bit32_4);
     EXPECT_EQ(completion_2[2], bit32_4);
@@ -190,33 +190,33 @@ TEST(TunumFmpintTest, ConstOperatorTest)
     EXPECT_EQ(completion_3[2], bit32_3);
     EXPECT_EQ(completion_3[3], bit32_3);
 
-    EXPECT_TRUE(tunum::int128_t{} == tunum::int256_t{});
-    EXPECT_TRUE(tunum::int128_t{} <= tunum::int256_t{});
-    EXPECT_FALSE(tunum::int128_t{} > tunum::int256_t{});
-    EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int256_t{});
-    EXPECT_FALSE(~tunum::int128_t{} >= ~tunum::int256_t{});
-    EXPECT_TRUE(~tunum::int128_t{} < ~tunum::int256_t{});
-    EXPECT_TRUE(tunum::int128_t{} != 1);
-    EXPECT_TRUE(tunum::int128_t{} < 1);
-    EXPECT_TRUE(4 > tunum::int256_t{3});
-    EXPECT_TRUE(4 == tunum::int256_t{4});
+    EXPECT_TRUE(tunum::uint128_t{} == tunum::uint256_t{});
+    EXPECT_TRUE(tunum::uint128_t{} <= tunum::uint256_t{});
+    EXPECT_FALSE(tunum::uint128_t{} > tunum::uint256_t{});
+    EXPECT_TRUE(~tunum::uint128_t{} != ~tunum::uint256_t{});
+    EXPECT_FALSE(~tunum::uint128_t{} >= ~tunum::uint256_t{});
+    EXPECT_TRUE(~tunum::uint128_t{} < ~tunum::uint256_t{});
+    EXPECT_TRUE(tunum::uint128_t{} != 1);
+    EXPECT_TRUE(tunum::uint128_t{} < 1);
+    EXPECT_TRUE(4 > tunum::uint256_t{3});
+    EXPECT_TRUE(4 == tunum::uint256_t{4});
 }
 
 TEST(TunumFmpintTest, BitOperationTest)
 {
-    EXPECT_EQ(tunum::int128_t{}.countl_zero_bit(), 128);
-    EXPECT_EQ(tunum::int128_t{}.countl_one_bit(), 0);
-    EXPECT_EQ(tunum::int128_t{}.countr_zero_bit(), 128);
-    EXPECT_EQ(tunum::int128_t{}.countr_one_bit(), 0);
-    EXPECT_EQ(tunum::int128_t{}.count_zero_bit(), 128);
-    EXPECT_EQ(tunum::int128_t{}.count_one_bit(), 0);
-    EXPECT_EQ(tunum::int128_t{}.is_full_bit(), false);
-    EXPECT_EQ(tunum::int128_t{}.is_full_bit(false), true);
-    EXPECT_EQ(tunum::int128_t{}.get_bit_width(), 0);
-    EXPECT_EQ(tunum::int128_t{}.get_bit(0), false);
-    EXPECT_EQ(tunum::int128_t{}.get_bit(127), false);
+    EXPECT_EQ(tunum::uint128_t{}.countl_zero_bit(), 128);
+    EXPECT_EQ(tunum::uint128_t{}.countl_one_bit(), 0);
+    EXPECT_EQ(tunum::uint128_t{}.countr_zero_bit(), 128);
+    EXPECT_EQ(tunum::uint128_t{}.countr_one_bit(), 0);
+    EXPECT_EQ(tunum::uint128_t{}.count_zero_bit(), 128);
+    EXPECT_EQ(tunum::uint128_t{}.count_one_bit(), 0);
+    EXPECT_EQ(tunum::uint128_t{}.is_full_bit(), false);
+    EXPECT_EQ(tunum::uint128_t{}.is_full_bit(false), true);
+    EXPECT_EQ(tunum::uint128_t{}.get_bit_width(), 0);
+    EXPECT_EQ(tunum::uint128_t{}.get_bit(0), false);
+    EXPECT_EQ(tunum::uint128_t{}.get_bit(127), false);
 
-    constexpr auto bit256_1 = ~tunum::int256_t{};
+    constexpr auto bit256_1 = ~tunum::uint256_t{};
     EXPECT_EQ(bit256_1.countl_zero_bit(), 0);
     EXPECT_EQ(bit256_1.countl_one_bit(), 256);
     EXPECT_EQ(bit256_1.countr_zero_bit(), 0);
@@ -229,7 +229,7 @@ TEST(TunumFmpintTest, BitOperationTest)
     EXPECT_EQ(bit256_1.get_bit(0), true);
     EXPECT_EQ(bit256_1.get_bit(255), true);
 
-    constexpr auto bit64_1 = tunum::fmpint<8>{bit64_lit_1};
+    constexpr auto bit64_1 = uint64_t_2{bit64_lit_1};
     EXPECT_EQ(bit64_1.countl_zero_bit(), 4);
     EXPECT_EQ(bit64_1.countl_one_bit(), 0);
     EXPECT_EQ(bit64_1.countr_zero_bit(), 16);
@@ -246,7 +246,7 @@ TEST(TunumFmpintTest, BitOperationTest)
     EXPECT_EQ(bit64_1.get_bit(60), false);
     EXPECT_EQ(bit64_1.get_bit(63), false);
 
-    constexpr auto bit512_1 = tunum::int512_t{~bit64_1};
+    constexpr auto bit512_1 = tunum::uint512_t{~bit64_1};
     EXPECT_EQ(bit512_1.countl_zero_bit(), 512 - 64);
     EXPECT_EQ(bit512_1.countl_one_bit(), 0);
     EXPECT_EQ(bit512_1.countr_zero_bit(), 0);
@@ -257,7 +257,7 @@ TEST(TunumFmpintTest, BitOperationTest)
     EXPECT_EQ(bit512_1.is_full_bit(false), false);
     EXPECT_EQ(bit512_1.get_bit_width(), 64);
 
-    auto bit128_1 = tunum::int128_t{};
+    auto bit128_1 = tunum::uint128_t{};
     bit128_1.set_bit(5, true);
     bit128_1.set_bit(43, true);
     bit128_1.set_bit(43, true);
@@ -271,24 +271,24 @@ TEST(TunumFmpintTest, BitOperationTest)
 TEST(TunumFmpintTest, OperatorTest)
 {
     // 加算
-    constexpr auto v1 = int128_t_2{2} + int64_t_2{1};
-    constexpr auto v2 = int64_t_2{2} + int128_t_2{1};
+    constexpr auto v1 = uint128_t_2{2} + uint64_t_2{1};
+    constexpr auto v2 = uint64_t_2{2} + uint128_t_2{1};
     static_assert(std::same_as<decltype(v1), decltype(v2)>, "expect same type.");
     
     for (int i = 0; i < 4; i++)
         ASSERT_EQ(v1.at(i), v2.at(i));
 
-    constexpr auto v3 = tunum::int128_t{~std::uint32_t{}} + tunum::int128_t{2};
+    constexpr auto v3 = tunum::uint128_t{~std::uint32_t{}} + tunum::uint128_t{2};
     EXPECT_EQ(v3[0], 1);
     EXPECT_EQ(v3[1], 1);
     EXPECT_EQ(v3[2], 0);
     EXPECT_EQ(v3[3], 0);
-    constexpr auto v4 = tunum::int128_t{~std::uint32_t{}} + ~std::uint32_t{};
+    constexpr auto v4 = tunum::uint128_t{~std::uint32_t{}} + ~std::uint32_t{};
     EXPECT_EQ(v4[0], ~std::uint32_t{} - 1);
     EXPECT_EQ(v4[1], 1);
     EXPECT_EQ(v4[2], 0);
     EXPECT_EQ(v4[3], 0);
-    constexpr auto v5 = (~tunum::int256_t{} >> 32) + (~tunum::int256_t{} >> 32);
+    constexpr auto v5 = (~tunum::uint256_t{} >> 32) + (~tunum::uint256_t{} >> 32);
     EXPECT_EQ(v5[0], ~std::uint32_t{} - 1);
     EXPECT_EQ(v5[1], ~std::uint32_t{});
     EXPECT_EQ(v5[2], ~std::uint32_t{});
@@ -305,7 +305,7 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v6[2], 0);
     EXPECT_EQ(v6[3], 0);
 
-    constexpr auto v7 = v5 - tunum::int128_t{v5};
+    constexpr auto v7 = v5 - tunum::uint128_t{v5};
     EXPECT_EQ(v7[0], 0);
     EXPECT_EQ(v7[1], 0);
     EXPECT_EQ(v7[2], 0);
@@ -316,43 +316,43 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v7[7], 1);
 
     EXPECT_EQ(
-        tunum::fmpint<8>{v5} - tunum::int128_t{~std::uint32_t{} - 1},
-        tunum::int128_t{~std::uint32_t{}} << 32
+        uint64_t_2{v5} - tunum::uint128_t{~std::uint32_t{} - 1},
+        tunum::uint128_t{~std::uint32_t{}} << 32
     );
-    EXPECT_TRUE(~tunum::int128_t{} != ~tunum::int128_t{} - 1);
-    EXPECT_TRUE(~tunum::int128_t{} > ~tunum::int128_t{} - 1);
-    EXPECT_FALSE(~tunum::int128_t{} <= ~tunum::int128_t{} - 1);
+    EXPECT_TRUE(~tunum::uint128_t{} != ~tunum::uint128_t{} - 1);
+    EXPECT_TRUE(~tunum::uint128_t{} > ~tunum::uint128_t{} - 1);
+    EXPECT_FALSE(~tunum::uint128_t{} <= ~tunum::uint128_t{} - 1);
 
     // 乗算
-    constexpr auto v8 = tunum::int128_t{~std::uint32_t{}} * tunum::int128_t{~std::uint32_t{}}
+    constexpr auto v8 = tunum::uint128_t{~std::uint32_t{}} * tunum::uint128_t{~std::uint32_t{}}
         == std::uint64_t{~std::uint32_t{}} * std::uint64_t{~std::uint32_t{}};
     EXPECT_TRUE(v8);
     EXPECT_EQ(
-        tunum::fmpint<8>{~std::uint64_t{}} * tunum::int128_t{~std::uint64_t{}},
-        (tunum::int128_t{~std::uint64_t{} - 1} << 64) + 1
+        uint64_t_2{~std::uint64_t{}} * tunum::uint128_t{~std::uint64_t{}},
+        (tunum::uint128_t{~std::uint64_t{} - 1} << 64) + 1
     );
 
     // 除算・剰余
-    EXPECT_THROW(~tunum::int512_t{} / 0, std::invalid_argument);
-    EXPECT_THROW(~tunum::int256_t{} % tunum::int512_t{0}, std::invalid_argument);
-    EXPECT_EQ(0 / tunum::int256_t{12345}, 0);
-    EXPECT_EQ(tunum::int512_t{} % 4, 0);
-    EXPECT_EQ(tunum::int512_t{3} / 4, 0);
-    EXPECT_EQ(tunum::int512_t{3} % 4, 3);
-    EXPECT_EQ(tunum::int512_t{3} / 1, 3);
-    EXPECT_EQ(tunum::int512_t{3} % 1, 0);
+    EXPECT_THROW(~tunum::uint512_t{} / 0, std::invalid_argument);
+    EXPECT_THROW(~tunum::uint256_t{} % tunum::uint512_t{0}, std::invalid_argument);
+    EXPECT_EQ(0 / tunum::uint256_t{12345}, 0);
+    EXPECT_EQ(tunum::uint512_t{} % 4, 0);
+    EXPECT_EQ(tunum::uint512_t{3} / 4, 0);
+    EXPECT_EQ(tunum::uint512_t{3} % 4, 3);
+    EXPECT_EQ(tunum::uint512_t{3} / 1, 3);
+    EXPECT_EQ(tunum::uint512_t{3} % 1, 0);
     // 等しい値
-    EXPECT_THROW(tunum::int512_t{} / tunum::int128_t{}, std::invalid_argument);
-    constexpr auto v9 = tunum::int512_t{~tunum::int128_t{}} / ~tunum::int128_t{};
+    EXPECT_THROW(tunum::uint512_t{} / tunum::uint128_t{}, std::invalid_argument);
+    constexpr auto v9 = tunum::uint512_t{~tunum::uint128_t{}} / ~tunum::uint128_t{};
     EXPECT_EQ(v9, 1);
-    EXPECT_EQ(tunum::int512_t{~tunum::int128_t{}} % ~tunum::int128_t{}, 0);
+    EXPECT_EQ(tunum::uint512_t{~tunum::uint128_t{}} % ~tunum::uint128_t{}, 0);
     // 委譲→組み込み演算子呼び出し
-    EXPECT_EQ((tunum::int128_t{12345} << 60) / (tunum::int512_t{34} << 60), 12345 / 34);
-    constexpr auto v10 = (tunum::int128_t{12345} << 60) % (tunum::int512_t{34} << 60);
-    EXPECT_EQ(v10, tunum::int128_t{12345 % 34} << 60);
+    EXPECT_EQ((tunum::uint128_t{12345} << 60) / (tunum::uint512_t{34} << 60), 12345 / 34);
+    constexpr auto v10 = (tunum::uint128_t{12345} << 60) % (tunum::uint512_t{34} << 60);
+    EXPECT_EQ(v10, tunum::uint128_t{12345 % 34} << 60);
     // コア部分確認(とりあえず具体的な数字がわからないので、割り切れる上、ビット操作で予想できるもののみ)
     // 残りのテストは文字列初期化可能になってから
-    constexpr auto v11 = ~tunum::int512_t{} / ~tunum::int128_t{};
+    constexpr auto v11 = ~tunum::uint512_t{} / ~tunum::uint128_t{};
     EXPECT_EQ(v11[0], 1);
     EXPECT_EQ(v11[1], 0);
     EXPECT_EQ(v11[2], 0);
@@ -382,14 +382,14 @@ TEST(TunumFmpintTest, StringConstructorTest)
     constexpr auto uint128_max_s = u"340282366920938463463374607431768211455";
     constexpr auto uint128_over_s = U"340282366920938463463374607431768211456";
 
-    constexpr auto v1 = tunum::int128_t{"0"};
+    constexpr auto v1 = tunum::uint128_t{"0"};
     EXPECT_FALSE(bool(v1));
-    constexpr auto v2 = tunum::int256_t{uint32_max_s};
+    constexpr auto v2 = tunum::uint256_t{uint32_max_s};
     EXPECT_EQ(v2, ~std::uint32_t{});
-    // constexpr auto v3 = tunum::int512_t{uint32_over_s};
-    EXPECT_EQ(tunum::int512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
-    EXPECT_EQ(tunum::int128_t{uint128_max_s}, ~tunum::int128_t{});
-    EXPECT_EQ(tunum::int128_t{uint128_over_s}, 0);
+    // constexpr auto v3 = tunum::uint512_t{uint32_over_s};
+    EXPECT_EQ(tunum::uint512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
+    EXPECT_EQ(tunum::uint128_t{uint128_max_s}, ~tunum::uint128_t{});
+    EXPECT_EQ(tunum::uint128_t{uint128_over_s}, 0);
 
     constexpr auto fmp_int_v = 340282366920938463463374607431768211455_fmp;
 }

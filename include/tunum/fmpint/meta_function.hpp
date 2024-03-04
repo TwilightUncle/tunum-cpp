@@ -6,7 +6,7 @@
 namespace tunum
 {
     // 前方宣言
-    template <std::size_t Bytes>
+    template <std::size_t Bytes, bool Signed>
     struct fmpint;
 
     // -------------------------------------------
@@ -16,8 +16,8 @@ namespace tunum
     // fmpint かどうか判定
     template <class T>
     struct is_fmpint : public std::false_type {};
-    template <std::size_t Bytes>
-    struct is_fmpint<fmpint<Bytes>> : public std::true_type {};
+    template <std::size_t Bytes, bool Signed>
+    struct is_fmpint<fmpint<Bytes, Signed>> : public std::true_type {};
 
     // fmpint かどうか判定
     template <class T>
@@ -31,13 +31,31 @@ namespace tunum
     template <class T>
     concept TuIntegral = is_fmpint_v<T> || std::is_integral_v<T>;
 
+    // 符号なし fmpint か判定
+    template <class T>
+    struct is_unsigned_fmpint : public std::false_type {};
+    template <std::size_t Bytes>
+    struct is_unsigned_fmpint<fmpint<Bytes, false>> : public std::true_type {};
+
+    // 符号なし fmpint か判定
+    template <class T>
+    constexpr bool is_unsigned_fmpint_v = is_unsigned_fmpint<T>::value;
+
+    // 符号なし fmpint か判定
+    template <class T>
+    concept TuFmpUnsigned = is_unsigned_fmpint_v<T>;
+
+    // 符号なしの fmpint または、符号なし整数か判定
+    template <class T>
+    concept TuUnsigned = is_unsigned_fmpint_v<T> || std::is_unsigned_v<T>;
+
     // 制約 TuIntegral が真となる型の byte サイズを取得
     template <class T>
     struct get_integral_size : public std::integral_constant<int, -1> {};
     template <std::integral T>
     struct get_integral_size<T> : public std::integral_constant<int, sizeof(T)> {};
-    template <std::size_t Bytes>
-    struct get_integral_size<fmpint<Bytes>> : public std::integral_constant<int, fmpint<Bytes>::size> {};
+    template <std::size_t Bytes, bool Signed>
+    struct get_integral_size<fmpint<Bytes, Signed>> : public std::integral_constant<int, fmpint<Bytes, Signed>::size> {};
 
     // 制約 TuIntegral が真となる型の byte サイズを取得
     template <class T>
@@ -45,11 +63,10 @@ namespace tunum
 
     // 制約 TuIntegral が真となる二つの型のうち、大きいほうと同じサイズの fmpint を返却
     template <TuIntegral T1, TuIntegral T2>
-    struct get_large_integral : public std::type_identity<
-        fmpint<(std::max)(
-            get_integral_size_v<T1>,
-            get_integral_size_v<T2>
-        )>
+    struct get_large_integral : public std::conditional<
+        (get_integral_size_v<T1> > get_integral_size_v<T2>)
+        || get_integral_size_v<T1> == get_integral_size_v<T2> && TuFmpUnsigned<T1>,
+        T1, T2
     > {};
 
     // 制約 TuIntegral が真となる二つの型のうち、大きいほうと同じサイズの fmpint を返却

@@ -10,18 +10,24 @@ namespace tunum::literals
     // リテラル定義
     // -------------------------------------------
 
+    namespace impl
+    {
+        template <bool Signed, char... IntegralLiteral>
+        inline constexpr auto make_fmpint()
+        {
+            using min_fmpint = fmpint<8, false>;
+            constexpr auto byte_size = ::tunum::alignment(
+                ::tunum::calc_integral_storable_byte(sizeof...(IntegralLiteral)) * 8,
+                min_fmpint::base_data_digits2
+            ) * min_fmpint::base_data_digits2 / 8;
+            constexpr char s[] = { IntegralLiteral..., '\0' };
+            return fmpint<byte_size, Signed>{s};
+        }
+    }
+
     // 符号あり 10 進数リテラル
     template <char... IntegralLiteral>
-    inline constexpr auto operator"" _fmp()
-    {
-        using min_fmpint = fmpint<8>;
-        constexpr auto byte_size = ::tunum::alignment(
-            ::tunum::calc_integral_storable_byte(sizeof...(IntegralLiteral)) * 8,
-            min_fmpint::base_data_digits2
-        ) * min_fmpint::base_data_digits2 / 8;
-        constexpr char s[] = { IntegralLiteral..., '\0' };
-        return fmpint<byte_size>{s};
-    }
+    inline constexpr auto operator"" _fmp() { return impl::make_fmpint<true, IntegralLiteral...>(); }
 
     // // 符号あり 2 進数リテラル
     // template <char... IntegralLiteral>

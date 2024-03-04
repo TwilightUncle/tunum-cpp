@@ -20,10 +20,9 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: 符号の実装
     // TODO: 文字列からの構築に10新リテラル以外も選べるようにする
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
-    template <std::size_t Bytes>
+    template <std::size_t Bytes, bool Signed = false>
     struct fmpint
     {
         // -------------------------------------------
@@ -44,11 +43,11 @@ namespace tunum
         static constexpr std::size_t max_digits2 = size * 8;
         static constexpr std::size_t max_digits10 = std::size_t(max_digits2 * log10_2);
 
-        using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1)>;
+        using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1), false>;
         using half_fmpint = std::conditional_t<
             half_size == sizeof(base_data_t),
             base_data_t,
-            fmpint<half_size>
+            fmpint<half_size, false>
         >;
 
         half_fmpint upper = {};
@@ -62,31 +61,34 @@ namespace tunum
 
         // 組み込みの整数から生成
         constexpr fmpint(std::integral auto v) noexcept
-            : lower(v < 0 ? -v : v)
+            : lower(v)
+            , upper((v < 0) ? ~half_fmpint{} : half_fmpint{})
         {
             if constexpr (size == sizeof(v))
-                this->upper = std::rotl(v < 0 ? -v : v, half_size * 8);
+                this->upper = std::rotl(v, half_size * 8);
         }
 
-        // 異なるサイズのfmpintから生成(内部表がんが等しいか小さいもの)
-        template <std::size_t N>
-        requires (N != Bytes && N <= size)
-        constexpr fmpint(const fmpint<N>& v) noexcept
-        {
-            constexpr std::size_t src_size = fmpint<N>::size;
-            if constexpr (size == src_size) {
-                // 内部表現が同じ場合
-                this->upper = v.upper;
-                this->lower = v.lower;
-            }
-            else this->lower = half_fmpint{v};
-        }
+        // 異なるサイズのfmpintから生成(内部表現が等しい)
+        template <std::size_t N, bool _Signed>
+        requires (Bytes != N && fmpint<N, _Signed>::size == size)
+        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
+            : lower(v.lower)
+            , upper(v.upper)
+        {}
+
+        // 異なるサイズのfmpintから生成(内部表現が小さい)
+        template <std::size_t N, bool _Signed>
+        requires (fmpint<N, _Signed>::size < size)
+        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
+            : lower(half_fmpint{v})
+            , upper((v < 0) ? ~half_fmpint{} : half_fmpint{})
+        {}
 
         // 異なるサイズのfmpintから生成
         // 格納できない領域は破棄
-        template <std::size_t N>
-        requires (N > size)
-        constexpr fmpint(const fmpint<N>& v) noexcept
+        template <std::size_t N, bool _Signed>
+        requires (fmpint<N, _Signed>::size > size)
+        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
             : fmpint(v.lower)
         {}
 
@@ -410,14 +412,22 @@ namespace tunum
             }
         }
 
+        constexpr bool _is_minus() const noexcept { return Signed && this->get_bit(max_digits2 - 1); }
+
         // 比較
-        constexpr auto _compare(const fmpint& v) const noexcept
+        template <bool _Signed>
+        constexpr std::strong_ordering _compare(const fmpint<Bytes, _Signed>& v) const noexcept
         {
             constexpr auto inner_compare = [](const half_fmpint& v1, const half_fmpint& v2) {
                 if constexpr (std::same_as<half_fmpint, base_data_t>)
                     return v1 <=> v2;
-                else return v1._compare(v2);
+                else
+                    return v1._compare(v2);
             };
+
+            // いずれかが負の値であれば、ビット反転したうえで大小比較
+            if (this->_is_minus() || v._is_minus())
+                return (~fmpint<size, false>{*this})._compare(~fmpint<size, false>{v});
 
             const auto upper_comp = inner_compare(this->upper, v.upper);
             return upper_comp != 0
@@ -425,7 +435,7 @@ namespace tunum
                 : inner_compare(this->lower, v.lower);
         }
 
-        // 加算の際にデータの損失が起こらないよう、一つ上のサイズの整数にして返却
+        // 加算
         static constexpr auto _add(const fmpint& v1, const fmpint& v2) noexcept
         {
             constexpr auto inner_add = [](const half_fmpint& l, const half_fmpint& r, bool is_zero_l, bool is_zero_r) -> half_fmpint {
