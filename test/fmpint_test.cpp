@@ -200,6 +200,10 @@ TEST(TunumFmpintTest, ConstOperatorTest)
     EXPECT_TRUE(tunum::uint128_t{} < 1);
     EXPECT_TRUE(4 > tunum::uint256_t{3});
     EXPECT_TRUE(4 == tunum::uint256_t{4});
+    constexpr auto l_v = tunum::int256_t{-5};
+    constexpr auto r_v = tunum::uint128_t{-5};
+    constexpr std::uint64_t a = std::int8_t(-1);
+    EXPECT_TRUE(tunum::int256_t{-5} == tunum::uint128_t{-5});
 }
 
 TEST(TunumFmpintTest, BitOperationTest)

@@ -80,7 +80,7 @@ namespace tunum
         template <std::size_t N, bool _Signed>
         requires (fmpint<N, _Signed>::size < size)
         constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
-            : lower(half_fmpint{v})
+            : lower(v._to_unsigned())
             , upper((v < 0) ? ~half_fmpint{} : half_fmpint{})
         {}
 
@@ -412,7 +412,17 @@ namespace tunum
             }
         }
 
+        // マイナスかどうか判定
         constexpr bool _is_minus() const noexcept { return Signed && this->get_bit(max_digits2 - 1); }
+
+        // 内部表現はそのままに符号なし整数へ変換
+        constexpr fmpint<Bytes, false> _to_unsigned() const noexcept
+        {
+            fmpint<Bytes, false> new_obj{};
+            new_obj.lower = this->lower;
+            new_obj.upper = this->upper;
+            return new_obj;
+        }
 
         // 比較
         template <bool _Signed>
@@ -427,7 +437,7 @@ namespace tunum
 
             // いずれかが負の値であれば、ビット反転したうえで大小比較
             if (this->_is_minus() || v._is_minus())
-                return (~fmpint<size, false>{*this})._compare(~fmpint<size, false>{v});
+                return (~this->_to_unsigned())._compare(~v._to_unsigned());
 
             const auto upper_comp = inner_compare(this->upper, v.upper);
             return upper_comp != 0
