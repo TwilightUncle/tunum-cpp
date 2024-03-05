@@ -105,41 +105,18 @@ namespace tunum
         template <class CharT, class Traits = std::char_traits<CharT>>
         constexpr fmpint(std::basic_string_view<CharT, Traits> num_str) noexcept
         {
-            // 文字コードから数値への変換と掛け算実施
-            constexpr auto inner_mul = [](auto mul_v, CharT v) {
-                constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
-                    if (c >= code_zero && c < code_zero + 10)
-                        return int(c - code_zero);
-                    if (c >= code_a && c < code_a + 6)
-                        return int(c - code_a + 10);
-                    return int(c - code_A + 10);
-                };
-
-                auto num = 0;
-                if constexpr (std::same_as<CharT, wchar_t>)
-                    num = char_to_num(v, L'0', L'a', L'A');
-                else if constexpr (std::same_as<CharT, char8_t>)
-                    num = char_to_num(v, u8'0', u8'a', u8'A');
-                else if constexpr (std::same_as<CharT, char16_t>)
-                    num = char_to_num(v, u'0', u'a', u'A');
-                else if constexpr (std::same_as<CharT, char32_t>)
-                    num = char_to_num(v, U'0', U'a', U'A');
-                else
-                    num = char_to_num(v, '0', 'a', 'A');
-                return mul_v *= num;
-            };
-
-            const auto table_10_n = _calc_table_10_n();
-            auto item = fmpint{1};
-            std::size_t i = 0;
-            const auto input_digits = num_str.length();
-            if constexpr (!is_min_size) {
-                i = (std::min)(input_digits, half_fmpint::max_digits10);
-                const auto substr_begin_pos = input_digits - i;
-                    this->lower = half_fmpint{num_str.substr(substr_begin_pos)};
-            }
-            for (; i < input_digits && i <= max_digits10; i++)
-                (*this) += inner_mul(table_10_n[i], num_str[input_digits - 1 - i]);
+            // const auto table_10_n = _calc_table_10_n();
+            // auto item = fmpint{1};
+            // std::size_t i = 0;
+            // const auto input_digits = num_str.length();
+            // if constexpr (!is_min_size) {
+            //     i = (std::min)(input_digits, half_fmpint::max_digits10);
+            //     const auto substr_begin_pos = input_digits - i;
+            //         this->lower = half_fmpint{num_str.substr(substr_begin_pos)};
+            // }
+            // for (; i < input_digits && i <= max_digits10; i++)
+            //     (*this) += (fmpint{table_10_n[i]} *= this->_char_to_num(num_str[input_digits - 1 - i]));
+            (*this) = _make_by_digits10_str(num_str);
         }
 
         // -------------------------------------------
@@ -610,6 +587,48 @@ namespace tunum
                 for (; i <= max_digits10; i++)
                     table[i] = fmpint{table[i - 1]} * 10;
             return table;
+        }
+
+        // 文字を数値へ変換
+        template <class CharT>
+        static constexpr auto _char_to_num(CharT v)
+        {
+            constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
+                if (c >= code_zero && c < code_zero + 10)
+                    return int(c - code_zero);
+                if (c >= code_a && c < code_a + 6)
+                    return int(c - code_a + 10);
+                return int(c - code_A + 10);
+            };
+
+            if constexpr (std::same_as<CharT, wchar_t>)
+                return char_to_num(v, L'0', L'a', L'A');
+            else if constexpr (std::same_as<CharT, char8_t>)
+                return char_to_num(v, u8'0', u8'a', u8'A');
+            else if constexpr (std::same_as<CharT, char16_t>)
+                return char_to_num(v, u'0', u'a', u'A');
+            else if constexpr (std::same_as<CharT, char32_t>)
+                return char_to_num(v, U'0', U'a', U'A');
+            else
+                return char_to_num(v, '0', 'a', 'A');
+        }
+
+        // 10進数文字列からオブジェクト生成
+        template <class CharT, class Traits = std::char_traits<CharT>>
+        static constexpr auto _make_by_digits10_str(std::basic_string_view<CharT, Traits> num_str)
+        {
+            const auto table_10_n = _calc_table_10_n();
+            fmpint new_obj{};
+            std::size_t i = 0;
+            const auto input_digits = num_str.length();
+            if constexpr (!is_min_size) {
+                i = (std::min)(input_digits, half_fmpint::max_digits10);
+                const auto substr_begin_pos = input_digits - i;
+                new_obj.lower = half_fmpint{num_str.substr(substr_begin_pos)};
+            }
+            for (; i < input_digits && i <= max_digits10; i++)
+                new_obj += (fmpint{table_10_n[i]} *= _char_to_num(num_str[input_digits - 1 - i]));
+            return new_obj;
         }
     };
 }
