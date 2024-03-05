@@ -205,15 +205,23 @@ namespace tunum
             // ローテート演算で回ってきた部分を除去
             for (std::size_t i = 0; i < shift_mul; i++)
                 (*this)[i] = 0;
-            (*this)[shift_mul] >>= shift_mod;
-            (*this)[shift_mul] <<= shift_mod;
+            const auto fill_mask = ~base_data_t{} << shift_mod;
+            (*this)[shift_mul] &= fill_mask;
             return *this;
         }
 
         // 右シフト
+        // 算術シフトか、論理シフトかは処理系の処理に準拠
         constexpr auto& operator>>=(std::size_t n) noexcept
         {
+            // 組み込み整数の右シフトが算術シフトとして実装されているか判定
+            // ※最上ビットが1の状態で、右シフト後の最上位ビットが1であれば算術シフト、そうでなければ論理シフト
+            constexpr auto is_use_sal = Signed
+                ? ((-1) >> 1) == -1
+                : ((~0u) >> 1) == (~0u);
+
             const auto shift_mod = n % base_data_digits2;
+            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
             const auto shift_mul = n / base_data_digits2;
 
             if (data_length <= shift_mul)
@@ -224,8 +232,15 @@ namespace tunum
             // ローテート演算で回ってきた部分を除去
             for (std::size_t i = 0; i < shift_mul; i++)
                 (*this)[data_length - 1 - i] = 0;
-            (*this)[shift_mul] <<= shift_mod;
-            (*this)[shift_mul] >>= shift_mod;
+            const auto highest_bit = this->get_bit(max_digits2 - 1);
+            const auto fill_mask = ~base_data_t{} << shift_com;
+            if (fill_mask != ~base_data_t{}) {
+                if (highest_bit && is_use_sal)
+                    // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
+                    (*this)[shift_mul] ^= fill_mask;
+                else
+                    (*this)[shift_mul] &= ~fill_mask;
+            }
             return *this;
         }
 
@@ -372,7 +387,7 @@ namespace tunum
         constexpr auto get_bit_width() const noexcept { return max_digits2 - this->countl_zero_bit(); }
 
         // 指定位置のビットを取得
-        constexpr auto get_bit(std::size_t i) const
+        constexpr bool get_bit(std::size_t i) const
         {
             const auto base_data_index = i / base_data_digits2;
             const auto bit_pos = i % base_data_digits2;
