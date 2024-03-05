@@ -203,9 +203,9 @@ namespace tunum
             *this = this->rotate_l(n);
 
             // ローテート演算で回ってきた部分を除去
+            const auto fill_mask = ~base_data_t{} << shift_mod;
             for (std::size_t i = 0; i < shift_mul; i++)
                 (*this)[i] = 0;
-            const auto fill_mask = ~base_data_t{} << shift_mod;
             (*this)[shift_mul] &= fill_mask;
             return *this;
         }
@@ -230,10 +230,10 @@ namespace tunum
             *this = this->rotate_r(n);
 
             // ローテート演算で回ってきた部分を除去
-            for (std::size_t i = 0; i < shift_mul; i++)
-                (*this)[data_length - 1 - i] = 0;
             const auto highest_bit = this->get_bit(max_digits2 - 1);
             const auto fill_mask = ~base_data_t{} << shift_com;
+            for (std::size_t i = 0; i < shift_mul; i++)
+                (*this)[data_length - 1 - i] = base_data_t{is_use_sal && highest_bit} * ~base_data_t{};
             if (fill_mask != ~base_data_t{}) {
                 if (highest_bit && is_use_sal)
                     // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
