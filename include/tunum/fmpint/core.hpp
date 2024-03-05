@@ -50,6 +50,8 @@ namespace tunum
             fmpint<half_size, false>
         >;
 
+        static constexpr bool is_min_size = std::same_as<base_data_t, half_fmpint>;
+
         half_fmpint upper = {};
         half_fmpint lower = {};
 
@@ -64,6 +66,7 @@ namespace tunum
             : lower(v)
             , upper((v < 0) ? ~half_fmpint{} : half_fmpint{})
         {
+            // このクラスも、指定された整数どちらも64ビットの場合のみ
             if constexpr (size == sizeof(v))
                 this->upper = std::rotl(v, half_size * 8);
         }
@@ -130,7 +133,7 @@ namespace tunum
             auto item = fmpint{1};
             std::size_t i = 0;
             const auto input_digits = num_str.length();
-            if constexpr (!std::same_as<base_data_t, half_fmpint>) {
+            if constexpr (!is_min_size) {
                 i = (std::min)(input_digits, half_fmpint::max_digits10);
                 const auto substr_begin_pos = input_digits - i;
                     this->lower = half_fmpint{num_str.substr(substr_begin_pos)};
@@ -211,7 +214,7 @@ namespace tunum
         }
 
         // 右シフト
-        // 算術シフトか、論理シフトかは処理系の処理に準拠
+        // 算術シフトか、論理シフトかは処理系に準拠
         constexpr auto& operator>>=(std::size_t n) noexcept
         {
             // 組み込み整数の右シフトが算術シフトとして実装されているか判定
@@ -230,13 +233,14 @@ namespace tunum
             *this = this->rotate_r(n);
 
             // ローテート演算で回ってきた部分を除去
+            // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
             const auto highest_bit = this->get_bit(max_digits2 - 1);
             const auto fill_mask = ~base_data_t{} << shift_com;
+            const auto is_fill_one = is_use_sal && highest_bit;
             for (std::size_t i = 0; i < shift_mul; i++)
-                (*this)[data_length - 1 - i] = base_data_t{is_use_sal && highest_bit} * ~base_data_t{};
+                (*this)[data_length - 1 - i] = base_data_t{is_fill_one} * ~base_data_t{};
             if (fill_mask != ~base_data_t{}) {
-                if (highest_bit && is_use_sal)
-                    // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
+                if (is_fill_one)
                     (*this)[shift_mul] ^= fill_mask;
                 else
                     (*this)[shift_mul] &= ~fill_mask;
@@ -346,7 +350,7 @@ namespace tunum
         constexpr auto count_one_bit() const noexcept
         {
             constexpr auto inner_count = [](const half_fmpint& v) {
-                if constexpr (std::integral<half_fmpint>)
+                if constexpr (is_min_size)
                     return std::popcount(v);
                 else
                     return v.count_one_bit();
@@ -367,7 +371,7 @@ namespace tunum
         constexpr auto count_continuous_bit(bool bit, bool is_begin_l) const noexcept
         {
             constexpr auto inner_f = [](const half_fmpint& v, bool _bit, bool _is_begin_l) {
-                if constexpr (std::integral<half_fmpint>) {
+                if constexpr (is_min_size) {
                     // ビット反転すると結果は同じでしょう
                     const auto _v = !_bit ? ~v : v;
                     return _is_begin_l ? std::countl_one(_v) : std::countr_one(_v);
@@ -417,7 +421,7 @@ namespace tunum
         {
             constexpr auto half_data_length = data_length / 2;
             const auto is_lower = half_data_length > i;
-            if constexpr (std::integral<half_fmpint>)
+            if constexpr (is_min_size)
                 return is_lower ? _this->lower : _this->upper;
             else {
                 const auto next_i = i % half_data_length;
@@ -444,7 +448,7 @@ namespace tunum
         constexpr std::strong_ordering _compare(const fmpint<Bytes, _Signed>& v) const noexcept
         {
             constexpr auto inner_compare = [](const half_fmpint& v1, const half_fmpint& v2) {
-                if constexpr (std::same_as<half_fmpint, base_data_t>)
+                if constexpr (is_min_size)
                     return v1 <=> v2;
                 else
                     return v1._compare(v2);
@@ -468,7 +472,7 @@ namespace tunum
                     return l;
                 if (is_zero_l)
                     return r;
-                if constexpr (std::same_as<base_data_t, half_fmpint>)
+                if constexpr (is_min_size)
                     return std::uint64_t(l) + std::uint64_t(r);
                 else
                     return half_fmpint::_add(l, r);
@@ -497,7 +501,7 @@ namespace tunum
         {
             using next_size_fmpint = fmpint<(size << 1)>;
             constexpr auto inner_mul = [](const half_fmpint& l, const half_fmpint& r) {
-                if constexpr (std::same_as<base_data_t, half_fmpint>)
+                if constexpr (is_min_size)
                     return fmpint{std::uint64_t(l) * std::uint64_t(r)};
                 else
                     return half_fmpint::_mul(l, r);
@@ -539,7 +543,7 @@ namespace tunum
             if (v2 == 1)
                 return std::array{fmpint{v1}, fmpint{}};
 
-            if constexpr (std::same_as<base_data_t, half_fmpint>)
+            if constexpr (is_min_size)
                 // 組み込みの演算子使えるならそっち優先
                 return std::array{
                     fmpint{std::uint64_t{v1} / std::uint64_t{v2}},
@@ -581,7 +585,7 @@ namespace tunum
             std::array<fmpint, max_digits10 + 1> table{};
             int i = 1;
             table[0] = 1;
-            if constexpr (!std::same_as<base_data_t, half_fmpint>) {
+            if constexpr (!is_min_size) {
                 constexpr auto half_table = half_fmpint::_calc_table_10_n();
                 for (; i <= half_fmpint::max_digits10; i++)
                     table[i] = half_table[i];
