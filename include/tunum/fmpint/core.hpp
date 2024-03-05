@@ -84,7 +84,7 @@ namespace tunum
         requires (fmpint<N, _Signed>::size < size)
         constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
             : lower(v._to_unsigned())
-            , upper((v < 0) ? ~half_fmpint{} : half_fmpint{})
+            , upper(v._is_minus() ? ~half_fmpint{} : half_fmpint{})
         {}
 
         // 異なるサイズのfmpintから生成
@@ -158,6 +158,14 @@ namespace tunum
             return (*this)[i];
         }
 
+        // 内部表現のうち一番小さい値の要素にアクセス
+        constexpr const base_data_t& front() const noexcept { return this->at(0); }
+        constexpr base_data_t& front() noexcept { return this->at(0); }
+
+        // 内部表現のうち一番大きい値の要素にアクセス
+        constexpr const base_data_t& back() const noexcept { return this->at(data_length - 1); }
+        constexpr base_data_t& back() noexcept { return this->at(data_length - 1); }
+
         // -------------------------------------------
         // 演算子オーバーロード
         // -------------------------------------------
@@ -171,9 +179,9 @@ namespace tunum
             return (std::uint64_t{(*this)[1]} << base_data_digits2)
                 | std::uint64_t{(*this)[0]};
         }
-        constexpr explicit operator std::uint32_t() const noexcept { return (*this)[0]; }
-        constexpr explicit operator std::uint16_t() const noexcept { return std::uint16_t{(*this)[0]}; }
-        constexpr explicit operator std::uint8_t() const noexcept { return std::uint8_t{(*this)[0]}; }
+        constexpr explicit operator std::uint32_t() const noexcept { return this->front(); }
+        constexpr explicit operator std::uint16_t() const noexcept { return std::uint16_t{this->front()}; }
+        constexpr explicit operator std::uint8_t() const noexcept { return std::uint8_t{this->front()}; }
 
         // bool キャスト
         constexpr explicit operator bool() const noexcept
@@ -234,7 +242,7 @@ namespace tunum
 
             // ローテート演算で回ってきた部分を除去
             // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
-            const auto highest_bit = this->get_bit(max_digits2 - 1);
+            const auto highest_bit = this->get_back_bit();
             const auto fill_mask = ~base_data_t{} << shift_com;
             const auto is_fill_one = is_use_sal && highest_bit;
             for (std::size_t i = 0; i < shift_mul; i++)
@@ -398,6 +406,12 @@ namespace tunum
             return bool(this->at(base_data_index) & (base_data_t{1} << bit_pos));
         }
 
+        // 先頭ビットを取得
+        constexpr bool get_front_bit() const noexcept { return this->get_bit(0); }
+
+        // 最後尾ビットを取得
+        constexpr bool get_back_bit() const noexcept { return this->get_bit(max_digits2 - 1); }
+
         // 指定位置のビットを変更
         constexpr void set_bit(std::size_t i, bool value)
         {
@@ -432,7 +446,7 @@ namespace tunum
         }
 
         // マイナスかどうか判定
-        constexpr bool _is_minus() const noexcept { return Signed && this->get_bit(max_digits2 - 1); }
+        constexpr bool _is_minus() const noexcept { return Signed && this->get_back_bit(); }
 
         // 内部表現はそのままに符号なし整数へ変換
         constexpr fmpint<Bytes, false> _to_unsigned() const noexcept
