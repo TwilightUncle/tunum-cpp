@@ -11,6 +11,7 @@
 #include <compare>
 #include <limits>
 #include <numbers>
+#include <ranges>
 
 namespace tunum
 {
@@ -20,7 +21,7 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: 文字列からの構築に10新リテラル以外も選べるようにする
+    // TODO: リテラルのシングルくオートを除去したい
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -105,7 +106,21 @@ namespace tunum
         template <class CharT, class Traits = std::char_traits<CharT>>
         constexpr fmpint(std::basic_string_view<CharT, Traits> num_str)
         {
-            (*this) = _make_by_digits10_str(num_str);
+            // 数値リテラルの接頭詞
+            constexpr auto digits2_prefix_1 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0b");
+            constexpr auto digits2_prefix_2 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0B");
+            constexpr auto digits8_prefix_1 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0");
+            constexpr auto digits16_prefix_1 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0x");
+            constexpr auto digits16_prefix_2 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X");
+
+            if (num_str.starts_with(digits2_prefix_1) || num_str.starts_with(digits2_prefix_2))
+                (*this) = _make_by_digits_power2_str<1, CharT, Traits>(num_str.substr(2));
+            else if (num_str.starts_with(digits8_prefix_1))
+                (*this) = _make_by_digits_power2_str<3, CharT, Traits>(num_str.substr(1));
+            else if (num_str.starts_with(digits16_prefix_1) || num_str.starts_with(digits16_prefix_2))
+                (*this) = _make_by_digits_power2_str<4, CharT, Traits>(num_str.substr(2));
+            else
+                (*this) = _make_by_digits10_str(num_str);
         }
 
         // -------------------------------------------
@@ -594,10 +609,41 @@ namespace tunum
             return int(v - code_A + 10);
         }
 
+        // 入力文字列が正しいか検証
+        template <class CharT, class Traits = std::char_traits<CharT>>
+        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str)
+        {
+            constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
+            constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
+
+            // シングルクオテーションから開始する文字列はNG
+            if (num_str.starts_with(double_s_quote[0]))
+                return false;
+            // シングルクオテーションが連続して2回以上出現したらNG
+            if (num_str.find(double_s_quote) != npos)
+                return false;
+            return true;
+        }
+
+        // リテラルの区切り文字を除去したviewを返却
+        // template <class CharT, class Traits = std::char_traits<CharT>>
+        // static constexpr bool _remove_delimiter(std::basic_string_view<CharT, Traits> num_str)
+        // {
+        //     constexpr auto s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
+        //     constexpr auto cond = [](CharT v) {
+        //         return v != s_quote;
+        //     };
+        //     return num_str | std::views::filter(cond);
+        // }
+
         // 10進数文字列からオブジェクト生成
         template <class CharT, class Traits = std::char_traits<CharT>>
         static constexpr auto _make_by_digits10_str(std::basic_string_view<CharT, Traits> num_str)
         {
+            constexpr auto error_msg = "Specified not number string.";
+            if (!_valid_input_number_string(num_str))
+                throw std::invalid_argument(error_msg);
+
             const auto table_10_n = _calc_table_10_n();
             fmpint new_obj{};
             std::size_t i = 0;
@@ -610,8 +656,32 @@ namespace tunum
             for (; i < input_digits && i <= max_digits10; i++) {
                 const auto num = _char_to_num(num_str[input_digits - 1 - i]);
                 if (num < 0 || 10 <= num)
-                    throw std::invalid_argument("Specified not number string.");
+                    throw std::invalid_argument(error_msg);
                 new_obj += (fmpint{table_10_n[i]} *= num);
+            }
+            return new_obj;
+        }
+
+        // 2の累乗進数からオブジェクト生成
+        template <std::size_t Pow, class CharT, class Traits = std::char_traits<CharT>>
+        requires (Pow > 0)
+        static constexpr auto _make_by_digits_power2_str(std::basic_string_view<CharT, Traits> num_str)
+        {
+            constexpr auto error_msg = "Specified not number string.";
+            if (!_valid_input_number_string(num_str))
+                throw std::invalid_argument(error_msg);
+
+            const auto input_end_bit_index = num_str.length() * Pow;
+            const auto end_bit_index = (std::min)(input_end_bit_index, max_digits2);
+            fmpint new_obj{};
+            for (std::size_t i = 0; i * Pow < end_bit_index; i++) {
+                const auto num = _char_to_num(num_str[num_str.length() - 1 - i]);
+                if (num < 0 || (1 << Pow) <= num)
+                    throw std::invalid_argument(error_msg);
+                for (std::size_t j = 0; j < Pow; j++) {
+                    const auto bit_state = bool(num & (1 << i));
+                    new_obj.set_bit(i * Pow + j, bit_state);
+                }
             }
             return new_obj;
         }
