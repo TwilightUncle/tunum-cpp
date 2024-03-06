@@ -2,7 +2,6 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_LITERALS_HPP
 
 #include TUNUM_COMMON_INCLUDE(fmpint/core.hpp)
-#include TUNUM_COMMON_INCLUDE(utility.hpp)
 
 namespace tunum::literals
 {

@@ -2,11 +2,11 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 
 #include TUNUM_COMMON_INCLUDE(fmpint/meta_function.hpp)
+#include TUNUM_COMMON_INCLUDE(utility.hpp)
 
 #include <bit>
 #include <array>
 #include <tuple>
-#include <string_view>
 #include <stdexcept>
 #include <compare>
 #include <limits>
@@ -103,19 +103,8 @@ namespace tunum
 
         // basic_string_viewあたりを引数として、文字列からの実装を想定
         template <class CharT, class Traits = std::char_traits<CharT>>
-        constexpr fmpint(std::basic_string_view<CharT, Traits> num_str) noexcept
+        constexpr fmpint(std::basic_string_view<CharT, Traits> num_str)
         {
-            // const auto table_10_n = _calc_table_10_n();
-            // auto item = fmpint{1};
-            // std::size_t i = 0;
-            // const auto input_digits = num_str.length();
-            // if constexpr (!is_min_size) {
-            //     i = (std::min)(input_digits, half_fmpint::max_digits10);
-            //     const auto substr_begin_pos = input_digits - i;
-            //         this->lower = half_fmpint{num_str.substr(substr_begin_pos)};
-            // }
-            // for (; i < input_digits && i <= max_digits10; i++)
-            //     (*this) += (fmpint{table_10_n[i]} *= this->_char_to_num(num_str[input_digits - 1 - i]));
             (*this) = _make_by_digits10_str(num_str);
         }
 
@@ -593,24 +582,16 @@ namespace tunum
         template <class CharT>
         static constexpr auto _char_to_num(CharT v)
         {
-            constexpr auto char_to_num = [](CharT c, CharT code_zero, CharT code_a, CharT code_A) {
-                if (c >= code_zero && c < code_zero + 10)
-                    return int(c - code_zero);
-                if (c >= code_a && c < code_a + 6)
-                    return int(c - code_a + 10);
-                return int(c - code_A + 10);
-            };
+            using traits_t = std::char_traits<CharT>;
+            constexpr CharT code_zero = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "0")[0];
+            constexpr CharT code_a = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "a")[0];
+            constexpr CharT code_A = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "A")[0];
 
-            if constexpr (std::same_as<CharT, wchar_t>)
-                return char_to_num(v, L'0', L'a', L'A');
-            else if constexpr (std::same_as<CharT, char8_t>)
-                return char_to_num(v, u8'0', u8'a', u8'A');
-            else if constexpr (std::same_as<CharT, char16_t>)
-                return char_to_num(v, u'0', u'a', u'A');
-            else if constexpr (std::same_as<CharT, char32_t>)
-                return char_to_num(v, U'0', U'a', U'A');
-            else
-                return char_to_num(v, '0', 'a', 'A');
+            if (v >= code_zero && v < code_zero + 10)
+                return int(v - code_zero);
+            if (v >= code_a && v < code_a + 6)
+                return int(v - code_a + 10);
+            return int(v - code_A + 10);
         }
 
         // 10進数文字列からオブジェクト生成
@@ -626,8 +607,12 @@ namespace tunum
                 const auto substr_begin_pos = input_digits - i;
                 new_obj.lower = half_fmpint{num_str.substr(substr_begin_pos)};
             }
-            for (; i < input_digits && i <= max_digits10; i++)
-                new_obj += (fmpint{table_10_n[i]} *= _char_to_num(num_str[input_digits - 1 - i]));
+            for (; i < input_digits && i <= max_digits10; i++) {
+                const auto num = _char_to_num(num_str[input_digits - 1 - i]);
+                if (num < 0 || 10 <= num)
+                    throw std::invalid_argument("Specified not number string.");
+                new_obj += (fmpint{table_10_n[i]} *= num);
+            }
             return new_obj;
         }
     };

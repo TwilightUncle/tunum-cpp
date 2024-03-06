@@ -8,6 +8,21 @@
 #include <concepts>
 #include <numbers>
 #include <bit>
+#include <string_view>
+
+#ifndef TUNUM_MAKE_ANY_TYPE_STR_VIEW
+// 任意の文字型のstring_viewを生成
+// @param char_type string_viewの文字型
+// @param traits string_viewのtraits
+// @param str_literal char型の文字列リテラルを指定すること
+#define TUNUM_MAKE_ANY_TYPE_STR_VIEW(char_type, traits, str_literal) []() -> std::basic_string_view<char_type, traits> { \
+        if constexpr (std::is_same_v<char_type, wchar_t>) return {(L ## str_literal)}; \
+        else if constexpr (std::is_same_v<char_type, char8_t>) return {(u8 ## str_literal)}; \
+        else if constexpr (std::is_same_v<char_type, char16_t>) return {(u ## str_literal)}; \
+        else if constexpr (std::is_same_v<char_type, char32_t>) return {(U ## str_literal)}; \
+        else return {(str_literal)}; \
+    }()
+#endif
 
 namespace tunum
 {
