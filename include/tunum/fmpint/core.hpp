@@ -6,7 +6,6 @@
 
 #include <bit>
 #include <array>
-#include <tuple>
 #include <stdexcept>
 #include <compare>
 #include <limits>
@@ -613,8 +612,9 @@ namespace tunum
         }
 
         // 入力文字列が正しいか検証
+        // 文字の範囲判定もここで
         template <class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str)
+        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str, int max_num = 10)
         {
             constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
             constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
@@ -625,27 +625,33 @@ namespace tunum
             // シングルクオテーションが連続して2回以上出現したらNG
             if (num_str.find(double_s_quote) != npos)
                 return false;
+            // 想定外の文字が入力されていないか検査
+            for (CharT ch : num_str)
+                if (ch != double_s_quote[0])
+                    if (auto num = _char_to_num(ch); num < 0 || max_num <= num)
+                        return false;
             return true;
         }
 
-        // リテラルの区切り文字を除去したviewを返却
-        // template <class CharT, class Traits = std::char_traits<CharT>>
-        // static constexpr bool _remove_delimiter(std::basic_string_view<CharT, Traits> num_str)
-        // {
-        //     constexpr auto s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
-        //     constexpr auto cond = [](CharT v) {
-        //         return v != s_quote;
-        //     };
-        //     return num_str | std::views::filter(cond);
-        // }
+        // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
+        template <class CharT, class Traits = std::char_traits<CharT>>
+        static constexpr auto _make_number_array(std::basic_string_view<CharT, Traits> num_str)
+        {
+            constexpr CharT s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
+            std::array<int, max_digits10 + 1> number_array = {};
+            for (auto& num : number_array) num = -1;
+            for (int i = 0; CharT ch : num_str | std::views::reverse)
+                if (ch != s_quote && i <= max_digits10)
+                    number_array[i++] = _char_to_num(ch);
+            return number_array;
+        }
 
         // 10進数文字列からオブジェクト生成
         template <class CharT, class Traits = std::char_traits<CharT>>
         static constexpr auto _make_by_digits10_str(std::basic_string_view<CharT, Traits> num_str)
         {
-            constexpr auto error_msg = "Specified not number string.";
-            if (!_valid_input_number_string(num_str))
-                throw std::invalid_argument(error_msg);
+            if (!_valid_input_number_string(num_str, 10))
+                throw std::invalid_argument("Specified not number string.");
 
             const auto table_10_n = _calc_table_10_n();
             fmpint new_obj{};
@@ -658,8 +664,6 @@ namespace tunum
             }
             for (; i < input_digits && i <= max_digits10; i++) {
                 const auto num = _char_to_num(num_str[input_digits - 1 - i]);
-                if (num < 0 || 10 <= num)
-                    throw std::invalid_argument(error_msg);
                 new_obj += (fmpint{table_10_n[i]} *= num);
             }
             return new_obj;
@@ -670,17 +674,14 @@ namespace tunum
         requires (Pow > 0)
         static constexpr auto _make_by_digits_power2_str(std::basic_string_view<CharT, Traits> num_str)
         {
-            constexpr auto error_msg = "Specified not number string.";
-            if (!_valid_input_number_string(num_str))
-                throw std::invalid_argument(error_msg);
+            if (!_valid_input_number_string(num_str, 1 << Pow))
+                throw std::invalid_argument("Specified not number string.");
 
             const auto input_end_bit_index = num_str.length() * Pow;
             const auto end_bit_index = (std::min)(input_end_bit_index, max_digits2);
             fmpint new_obj{};
             for (std::size_t i = 0; i * Pow < end_bit_index; i++) {
                 const auto num = _char_to_num(num_str[num_str.length() - 1 - i]);
-                if (num < 0 || (1 << Pow) <= num)
-                    throw std::invalid_argument(error_msg);
                 for (std::size_t j = 0; j < Pow; j++)
                     new_obj.set_bit(i * Pow + j, num & (1 << i));
             }
