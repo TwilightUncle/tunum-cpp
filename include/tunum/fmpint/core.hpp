@@ -21,7 +21,7 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: リテラルのシングルくオートを除去したい
+    // TODO: リテラルのシングルくオートを除去したい(filterとか必要な部分のみstd::stringを使うか？)
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -449,10 +449,13 @@ namespace tunum
                     return v1._compare(v2);
             };
 
-            // いずれかが負の値であれば、ビット反転したうえで大小比較
-            if (this->_is_minus() || v._is_minus())
-                return (~this->_to_unsigned())._compare(~v._to_unsigned());
+            // 異なる符号間の場合、大小関係は自明
+            if (const bool is_this_minus = this->_is_minus(); is_this_minus != v._is_minus())
+                return is_this_minus
+                    ? std::strong_ordering::less
+                    : std::strong_ordering::greater;
 
+            // 両方負の場合も、内部的な表現は正の整数と大小関係が同じになるのでそのまま比較実施
             const auto upper_comp = inner_compare(this->upper, v.upper);
             return upper_comp != 0
                 ? upper_comp
@@ -468,7 +471,7 @@ namespace tunum
                 if (is_zero_l)
                     return r;
                 if constexpr (is_min_size)
-                    return std::uint64_t(l) + std::uint64_t(r);
+                    return l + r;
                 else
                     return half_fmpint::_add(l, r);
             };
@@ -678,10 +681,8 @@ namespace tunum
                 const auto num = _char_to_num(num_str[num_str.length() - 1 - i]);
                 if (num < 0 || (1 << Pow) <= num)
                     throw std::invalid_argument(error_msg);
-                for (std::size_t j = 0; j < Pow; j++) {
-                    const auto bit_state = bool(num & (1 << i));
-                    new_obj.set_bit(i * Pow + j, bit_state);
-                }
+                for (std::size_t j = 0; j < Pow; j++)
+                    new_obj.set_bit(i * Pow + j, num & (1 << i));
             }
             return new_obj;
         }
