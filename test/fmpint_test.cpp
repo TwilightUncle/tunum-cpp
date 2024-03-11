@@ -395,7 +395,9 @@ TEST(TunumFmpintTest, StringConstructorTest)
     EXPECT_EQ(tunum::uint128_t{uint128_max_s}, ~tunum::uint128_t{});
     EXPECT_EQ(tunum::uint128_t{uint128_over_s}, 0);
 
-    constexpr auto fmp_int_v = 340282366920938463463374607431768211455_fmp;
+    constexpr auto fmp_int_v1 = 340282366920938463463374607431768211455_fmp;
+    constexpr auto fmp_int_v2 = 340'282'366'920'938'463'463'374'607'431'768'211'455_fmp;
+    EXPECT_EQ(fmp_int_v1, fmp_int_v2);
+    // constexpr auto fmp_int_v3 = 0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
+    // EXPECT_EQ(fmp_int_v1, fmp_int_v3);
 }
-
-

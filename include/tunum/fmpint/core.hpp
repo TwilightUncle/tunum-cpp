@@ -4,13 +4,10 @@
 #include TUNUM_COMMON_INCLUDE(fmpint/meta_function.hpp)
 #include TUNUM_COMMON_INCLUDE(utility.hpp)
 
-#include <bit>
 #include <array>
 #include <stdexcept>
 #include <compare>
 #include <limits>
-#include <numbers>
-#include <ranges>
 
 namespace tunum
 {
@@ -20,7 +17,7 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: リテラルのシングルくオートを除去したい(filterとか必要な部分のみstd::stringを使うか？)
+    // TODO: 進数リテラルのテストを書く
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -28,9 +25,6 @@ namespace tunum
         // -------------------------------------------
         // メンバ定義
         // -------------------------------------------
-
-        // 進数変換等のサイズ計算用
-        static constexpr auto log10_2 = std::numbers::ln2 / std::numbers::ln10;
 
         // 内部的に扱うサイズは2の累乗に統一する
         using base_data_t = std::uint32_t;
@@ -41,7 +35,7 @@ namespace tunum
 
         static constexpr std::size_t base_data_digits2 = std::numeric_limits<base_data_t>::digits;
         static constexpr std::size_t max_digits2 = size * 8;
-        static constexpr std::size_t max_digits10 = std::size_t(max_digits2 * log10_2);
+        static constexpr std::size_t max_digits10 = calc_integral_digits_from_bitwidth<10>(max_digits2);
 
         using min_size_fmpint = fmpint<(sizeof(base_data_t) << 1), false>;
         using half_fmpint = std::conditional_t<
@@ -113,13 +107,13 @@ namespace tunum
             constexpr auto digits16_prefix_2 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X");
 
             if (num_str.starts_with(digits2_prefix_1) || num_str.starts_with(digits2_prefix_2))
-                (*this) = _make_by_digits_power2_str<1, CharT, Traits>(num_str.substr(2));
-            else if (num_str.starts_with(digits8_prefix_1))
-                (*this) = _make_by_digits_power2_str<3, CharT, Traits>(num_str.substr(1));
+                (*this) = _make_by_digits_power2_arr<2>(_make_number_array<2>(num_str.substr(2)));
             else if (num_str.starts_with(digits16_prefix_1) || num_str.starts_with(digits16_prefix_2))
-                (*this) = _make_by_digits_power2_str<4, CharT, Traits>(num_str.substr(2));
+                (*this) = _make_by_digits_power2_arr<16>(_make_number_array<16>(num_str.substr(2)));
+            else if (num_str.starts_with(digits8_prefix_1))
+                (*this) = _make_by_digits_power2_arr<8>(_make_number_array<8>(num_str));
             else
-                (*this) = _make_by_digits10_str(num_str);
+                (*this) = _make_by_digits10_arr(_make_number_array<10>(num_str));
         }
 
         // -------------------------------------------
@@ -614,7 +608,7 @@ namespace tunum
         // 入力文字列が正しいか検証
         // 文字の範囲判定もここで
         template <class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str, int max_num = 10)
+        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str, int base_numer = 10)
         {
             constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
             constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
@@ -628,63 +622,61 @@ namespace tunum
             // 想定外の文字が入力されていないか検査
             for (CharT ch : num_str)
                 if (ch != double_s_quote[0])
-                    if (auto num = _char_to_num(ch); num < 0 || max_num <= num)
+                    if (auto num = _char_to_num(ch); num < 0 || base_numer <= num)
                         return false;
             return true;
         }
 
         // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
-        template <class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr auto _make_number_array(std::basic_string_view<CharT, Traits> num_str)
+        template <
+            std::size_t Base,
+            class CharT,
+            class Traits = std::char_traits<CharT>,
+            std::size_t ArrSize = calc_integral_digits_from_bitwidth<Base>(max_digits2)
+        >
+        static constexpr std::array<int, ArrSize + 1> _make_number_array(std::basic_string_view<CharT, Traits> num_str)
         {
+            if (!_valid_input_number_string(num_str, Base))
+                throw std::invalid_argument("Specified not number string.");
+
             constexpr CharT s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
-            std::array<int, max_digits10 + 1> number_array = {};
-            for (auto& num : number_array) num = -1;
-            for (int i = 0; CharT ch : num_str | std::views::reverse)
-                if (ch != s_quote && i <= max_digits10)
+            std::array<int, ArrSize + 1> number_array = {};
+            for (int i = 0, ch_i = num_str.length() - 1; ch_i >= 0 && i <= ArrSize; ch_i--)
+                if (const auto ch = num_str[ch_i]; ch != s_quote)
                     number_array[i++] = _char_to_num(ch);
             return number_array;
         }
 
         // 10進数文字列からオブジェクト生成
-        template <class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr auto _make_by_digits10_str(std::basic_string_view<CharT, Traits> num_str)
+        static constexpr auto _make_by_digits10_arr(const std::array<int, max_digits10 + 1>& num_arr)
         {
-            if (!_valid_input_number_string(num_str, 10))
-                throw std::invalid_argument("Specified not number string.");
-
             const auto table_10_n = _calc_table_10_n();
             fmpint new_obj{};
             std::size_t i = 0;
-            const auto input_digits = num_str.length();
             if constexpr (!is_min_size) {
-                i = (std::min)(input_digits, half_fmpint::max_digits10);
-                const auto substr_begin_pos = input_digits - i;
-                new_obj.lower = half_fmpint{num_str.substr(substr_begin_pos)};
+                std::array<int, half_fmpint::max_digits10 + 1> half_num_arr = {};
+                for (int j = 0; auto& num : half_num_arr)
+                    num = num_arr[j++];
+                // 一つ下のサイズの最大要素はオーバーフローする可能性があるため、
+                // 委譲対象外とする
+                half_num_arr[i = half_fmpint::max_digits10] = 0;
+                new_obj.lower = half_fmpint::_make_by_digits10_arr(half_num_arr);
             }
-            for (; i < input_digits && i <= max_digits10; i++) {
-                const auto num = _char_to_num(num_str[input_digits - 1 - i]);
-                new_obj += (fmpint{table_10_n[i]} *= num);
-            }
+            for (; i <= max_digits10; i++)
+                if (const auto num = num_arr[i]; num > 0)
+                    new_obj += (fmpint{table_10_n[i]} *= num);
             return new_obj;
         }
 
         // 2の累乗進数からオブジェクト生成
-        template <std::size_t Pow, class CharT, class Traits = std::char_traits<CharT>>
-        requires (Pow > 0)
-        static constexpr auto _make_by_digits_power2_str(std::basic_string_view<CharT, Traits> num_str)
+        template <std::size_t Base, std::size_t ArrSize = calc_integral_digits_from_bitwidth<Base>(max_digits2)>
+        requires (Base > 1)
+        static constexpr auto _make_by_digits_power2_arr(const std::array<int, ArrSize + 1>& num_arr)
         {
-            if (!_valid_input_number_string(num_str, 1 << Pow))
-                throw std::invalid_argument("Specified not number string.");
-
-            const auto input_end_bit_index = num_str.length() * Pow;
-            const auto end_bit_index = (std::min)(input_end_bit_index, max_digits2);
             fmpint new_obj{};
-            for (std::size_t i = 0; i * Pow < end_bit_index; i++) {
-                const auto num = _char_to_num(num_str[num_str.length() - 1 - i]);
-                for (std::size_t j = 0; j < Pow; j++)
-                    new_obj.set_bit(i * Pow + j, num & (1 << i));
-            }
+            for (std::size_t i = 0; auto num : num_arr)
+                for (std::size_t j = 0; j < std::bit_width(Base) && i < max_digits2; i++, j++)
+                    new_obj.set_bit(i, num & (1 << j));
             return new_obj;
         }
     };

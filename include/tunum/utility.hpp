@@ -47,6 +47,13 @@ namespace tunum
         }
         || std::is_arithmetic_v<T>;
 
+    namespace numbers
+    {
+        // 数値の定数定義
+
+        inline constexpr double log10_2 = std::numbers::ln2 / std::numbers::ln10;
+    }
+
     // 絶対値取得
     inline constexpr auto abs(const TuArithmetic auto& v) { return v < 0 ? -v : v; }
 
@@ -83,13 +90,23 @@ namespace tunum
             return tunum::alignment(total_bit_width, byte);
         }
         else {
-            constexpr auto log10_2 = std::numbers::ln2 / std::numbers::ln10;
             // 2, 8, 16 進数以外は全て 10 進数として処理する
-            const auto near_total_bit_width = digits / log10_2;
+            const auto near_total_bit_width = digits / tunum::numbers::log10_2;
             return tunum::alignment(tunum::ceil(near_total_bit_width), byte);
         }
     }
 
+    // 指定のビット幅に対して、Baseの進数を何桁格納できるか計算
+    // @tparam Base 進数を指定。2, 8, 16 以外は全て 10 進数として処理
+    // @param bit_width 計算したい領域のビット幅
+    template <std::size_t Base = 10>
+    inline constexpr auto calc_integral_digits_from_bitwidth(std::size_t bit_width)
+    {
+        if constexpr (Base == 2 || Base == 8 || Base == 16) 
+            return alignment(bit_width, std::bit_width(Base) - 1);
+        else
+            return static_cast<std::size_t>(bit_width * tunum::numbers::log10_2);
+    }
 } // namespace tunum
 
 #endif
