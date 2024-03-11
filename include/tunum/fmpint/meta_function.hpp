@@ -62,16 +62,14 @@ namespace tunum
     constexpr int get_integral_size_v = get_integral_size<T>::value;
 
     // 制約 TuIntegral が真となる二つの型のうち、大きいほうと同じサイズの fmpint を返却
-    template <TuIntegral T1, TuIntegral T2>
-    struct get_large_integral : public std::conditional<
-        (get_integral_size_v<T1> > get_integral_size_v<T2>)
-        || get_integral_size_v<T1> == get_integral_size_v<T2> && TuFmpUnsigned<T1>,
-        T1, T2
+    template <TuIntegral T1, TuIntegral T2, TuIntegral T1_or_T2>
+    struct get_large_integral : public std::type_identity<
+        fmpint<(std::max)(sizeof(T1), sizeof(T2)), !TuUnsigned<T1_or_T2>>
     > {};
 
     // 制約 TuIntegral が真となる二つの型のうち、大きいほうと同じサイズの fmpint を返却
-    template <TuIntegral T1, TuIntegral T2>
-    using get_large_integral_t = typename get_large_integral<T1, T2>::type;
+    template <TuIntegral T1, TuIntegral T2, TuIntegral T1_or_T2>
+    using get_large_integral_t = typename get_large_integral<T1, T2, T1_or_T2>::type;
 }
 
 #endif
