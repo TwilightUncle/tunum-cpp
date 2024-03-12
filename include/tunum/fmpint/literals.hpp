@@ -11,10 +11,10 @@ namespace tunum::literals
 
     namespace impl
     {
+        // リテラルの接頭詞や、先頭の0、区切り文字のシングルクオテーションマーク以外をカウント
         template <char... IntegralLiteral>
         inline constexpr std::size_t count_number_digits()
         {
-            constexpr std::size_t length = sizeof...(IntegralLiteral);
             constexpr char s[] = { IntegralLiteral..., '\0' };
             constexpr auto prefixes = std::array{
                 std::string_view{"0b"},
@@ -24,8 +24,8 @@ namespace tunum::literals
                 std::string_view{"0"}
             };
 
-            auto view = std::string_view(s);
-            std::size_t cnt = length;
+            auto view = std::string_view{s};
+            std::size_t cnt = view.length();
             for (auto prefix : prefixes)
                 if (view.starts_with(prefix)) {
                     cnt -= prefix.length();
@@ -40,13 +40,30 @@ namespace tunum::literals
             return cnt;
         }
 
+        // リテラルの接頭詞から進数を取得
+        template <char... IntegralLiteral>
+        inline constexpr std::size_t get_base_number()
+        {
+            constexpr char s[] = { IntegralLiteral..., '\0' };
+            const auto view = std::string_view{s};
+            if (view.starts_with("0b") || view.starts_with("0B"))
+                return 2;
+            if (view.starts_with("0x") || view.starts_with("0X"))
+                return 16;
+            if (view.starts_with("0"))
+                return 8;
+            return 10;
+        }
+
         template <bool Signed, char... IntegralLiteral>
         inline constexpr auto make_fmpint()
         {
             using min_fmpint = fmpint<8, false>;
             constexpr std::size_t count_num = count_number_digits<IntegralLiteral...>();
+            constexpr std::size_t base_number = get_base_number<IntegralLiteral...>();
+
             constexpr auto byte_size = ::tunum::alignment(
-                ::tunum::calc_integral_storable_byte(count_num) * 8,
+                ::tunum::calc_integral_storable_byte<base_number>(count_num) * 8,
                 min_fmpint::base_data_digits2
             ) * min_fmpint::base_data_digits2 / 8;
             constexpr char s[] = { IntegralLiteral..., '\0' };

@@ -17,7 +17,7 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: 進数リテラルのテストを書く
+    // TODO: 文字列からの構築時の例外テストを書く
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -65,33 +65,39 @@ namespace tunum
                 this->upper = std::rotl(v, half_size * 8);
         }
 
+        // 異なる符号同士は引数の符号を反転したうえで別コンストラクタに委譲
+        template <std::size_t N>
+        constexpr fmpint(const fmpint<N, !Signed>& v) noexcept
+            : fmpint(v._switch_sign())
+        {}
+
         // 異なるサイズのfmpintから生成(内部表現が等しい)
-        template <std::size_t N, bool _Signed>
-        requires (Bytes != N && fmpint<N, _Signed>::size == size)
-        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
+        template <std::size_t N>
+        requires (Bytes != N && fmpint<N, Signed>::size == size)
+        constexpr fmpint(const fmpint<N, Signed>& v) noexcept
             : lower(v.lower)
             , upper(v.upper)
         {}
 
         // 異なるサイズのfmpintから生成(内部表現が小さい)
-        template <std::size_t N, bool _Signed>
-        requires (fmpint<N, _Signed>::size < size)
-        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
+        template <std::size_t N>
+        requires (fmpint<N, Signed>::size < size)
+        constexpr fmpint(const fmpint<N, Signed>& v) noexcept
             : lower(v._to_unsigned())
             , upper(v._is_minus() ? ~half_fmpint{} : half_fmpint{})
         {}
 
         // 異なるサイズのfmpintから生成
         // 格納できない領域は破棄
-        template <std::size_t N, bool _Signed>
-        requires (fmpint<N, _Signed>::size > size)
-        constexpr fmpint(const fmpint<N, _Signed>& v) noexcept
+        template <std::size_t N>
+        requires (fmpint<N, Signed>::size > size)
+        constexpr fmpint(const fmpint<N, Signed>& v) noexcept
             : fmpint(v.lower)
         {}
 
         // c言語風文字列より初期化
         template <class CharT>
-        constexpr fmpint(const CharT* num_str) noexcept
+        constexpr fmpint(const CharT* num_str)
             : fmpint(std::basic_string_view<CharT>{num_str})
         {}
 
@@ -425,7 +431,16 @@ namespace tunum
         // 内部表現はそのままに符号なし整数へ変換
         constexpr fmpint<Bytes, false> _to_unsigned() const noexcept
         {
-            fmpint<Bytes, false> new_obj{};
+            if constexpr (!Signed)
+                return fmpint{*this};
+            else
+                return _switch_sign();
+        }
+
+        // 符号ありの時は符号なしに、符号なしの時は符号ありの、内部的表現はそのままに型だけ変換
+        constexpr fmpint<Bytes, !Signed> _switch_sign() const noexcept
+        {
+            fmpint<Bytes, !Signed> new_obj{};
             new_obj.lower = this->lower;
             new_obj.upper = this->upper;
             return new_obj;
@@ -641,6 +656,8 @@ namespace tunum
 
             constexpr CharT s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
             std::array<int, ArrSize + 1> number_array = {};
+            // ranges の reverse_view による反転は clang で怒られたため、
+            // インデックス操作で読み取り順序を反転させる
             for (int i = 0, ch_i = num_str.length() - 1; ch_i >= 0 && i <= ArrSize; ch_i--)
                 if (const auto ch = num_str[ch_i]; ch != s_quote)
                     number_array[i++] = _char_to_num(ch);
@@ -673,9 +690,11 @@ namespace tunum
         requires (Base > 1)
         static constexpr auto _make_by_digits_power2_arr(const std::array<int, ArrSize + 1>& num_arr)
         {
+            // n 進数の n ではなく、実際に1桁として表現可能な(n - 1)のビット幅を見なければいけない
+            constexpr auto digit_bit_width = std::bit_width(Base - 1);
             fmpint new_obj{};
             for (std::size_t i = 0; auto num : num_arr)
-                for (std::size_t j = 0; j < std::bit_width(Base) && i < max_digits2; i++, j++)
+                for (std::size_t j = 0; j < digit_bit_width && i < max_digits2; i++, j++)
                     new_obj.set_bit(i, num & (1 << j));
             return new_obj;
         }

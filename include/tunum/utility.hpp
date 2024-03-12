@@ -85,7 +85,7 @@ namespace tunum
     {
         constexpr auto byte = 8u;
         if constexpr (Base == 2 || Base == 8 || Base == 16) {
-            constexpr auto base_bit_width = std::bit_width(Base) - 1;
+            constexpr auto base_bit_width = std::bit_width(Base - 1);
             const auto total_bit_width = digits * base_bit_width;
             return tunum::alignment(total_bit_width, byte);
         }

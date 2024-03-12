@@ -398,6 +398,16 @@ TEST(TunumFmpintTest, StringConstructorTest)
     constexpr auto fmp_int_v1 = 340282366920938463463374607431768211455_fmp;
     constexpr auto fmp_int_v2 = 340'282'366'920'938'463'463'374'607'431'768'211'455_ufmp;
     EXPECT_EQ(fmp_int_v1, fmp_int_v2);
-    // constexpr auto fmp_int_v3 = 0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
-    // EXPECT_EQ(fmp_int_v1, fmp_int_v3);
+    constexpr auto fmp_int_v3 = 0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
+    constexpr auto fmp_int_v4 = 0X000000'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
+    EXPECT_EQ(fmp_int_v1, fmp_int_v3);
+    EXPECT_EQ(fmp_int_v3, fmp_int_v4);
+    constexpr auto fmp_int_v5 = 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_fmp;
+    constexpr auto fmp_int_v6 = 0b000000001111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_ufmp;
+    EXPECT_EQ(fmp_int_v5, -1);
+    EXPECT_EQ(fmp_int_v6, ~std::uint64_t{});
+    constexpr auto fmp_int_v7 = 0377'77777777'77777777'77777777'77777777'77777777_fmp;
+    constexpr auto fmp_int_v8 = 00000377'77777777'77777777'77777777'77777777'77777777_ufmp;
+    EXPECT_EQ(fmp_int_v3, fmp_int_v7);
+    EXPECT_EQ(fmp_int_v7, fmp_int_v8);
 }
