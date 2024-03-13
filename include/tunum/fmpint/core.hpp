@@ -18,6 +18,7 @@ namespace tunum
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
     // TODO: 文字列からの構築時の例外テストを書く
+    // TODO: 剰余の演算、ビット反転とマスクでできるんなら計算量へらせね？
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -113,9 +114,9 @@ namespace tunum
             constexpr auto digits16_prefix_2 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X");
 
             if (num_str.starts_with(digits2_prefix_1) || num_str.starts_with(digits2_prefix_2))
-                (*this) = _make_by_digits_power2_arr<2>(_make_number_array<2>(num_str.substr(2)));
+                (*this) = _make_by_digits_power2_arr<2>(_make_number_array<2>(num_str));
             else if (num_str.starts_with(digits16_prefix_1) || num_str.starts_with(digits16_prefix_2))
-                (*this) = _make_by_digits_power2_arr<16>(_make_number_array<16>(num_str.substr(2)));
+                (*this) = _make_by_digits_power2_arr<16>(_make_number_array<16>(num_str));
             else if (num_str.starts_with(digits8_prefix_1))
                 (*this) = _make_by_digits_power2_arr<8>(_make_number_array<8>(num_str));
             else
@@ -620,27 +621,73 @@ namespace tunum
             return int(v - code_A + 10);
         }
 
-        // 入力文字列が正しいか検証
-        // 文字の範囲判定もここで
-        template <class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str, int base_numer = 10)
+        // 進数リテラルの接頭詞を返却
+        template <std::size_t Base, class CharT, class Traits = std::char_traits<CharT>>
+        static constexpr auto _get_literal_prefixes()
         {
-            constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
-            constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
-
-            // シングルクオテーションから開始する文字列はNG
-            if (num_str.starts_with(double_s_quote[0]))
-                return false;
-            // シングルクオテーションが連続して2回以上出現したらNG
-            if (num_str.find(double_s_quote) != npos)
-                return false;
-            // 想定外の文字が入力されていないか検査
-            for (CharT ch : num_str)
-                if (ch != double_s_quote[0])
-                    if (auto num = _char_to_num(ch); num < 0 || base_numer <= num)
-                        return false;
-            return true;
+            if constexpr (Base == 2)
+                return std::array{
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0b"),
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0B")
+                };
+            else if constexpr (Base == 8)
+                return std::array{
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0")
+                };
+            else if constexpr (Base == 16)
+                return std::array{
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0x"),
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X")
+                };
+            else
+                return std::array<std::basic_string_view<CharT, Traits>, 0>{};
         }
+
+        // 接頭詞の長さ取得
+        template <std::size_t Base>
+        static constexpr auto _get_literal_prefix_length() { return (Base == 2 || Base == 16) ? 2 : 0; }
+
+        // 入力文字列が正しいか検証
+        template <std::size_t Base, class CharT, class Traits = std::char_traits<CharT>>
+        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str)
+        {
+            // 接頭詞を除外した部分の検証
+            constexpr auto valid_without_prefix = [](std::basic_string_view<CharT, Traits> _num_str) -> bool {
+                constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
+                constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
+
+                // シングルクオテーションから開始する文字列はNG
+                if (_num_str.starts_with(double_s_quote[0]))
+                    return false;
+                // シングルクオテーションが連続して2回以上出現したらNG
+                if (_num_str.find(double_s_quote) != npos)
+                    return false;
+                // 想定外の文字が入力されていないか検査
+                for (CharT ch : _num_str)
+                    if (ch != double_s_quote[0])
+                        if (auto num = _char_to_num(ch); num < 0 || Base <= num)
+                            return false;
+                return true;
+            };
+
+            if constexpr (Base == 2 || Base == 16) {
+                // 接頭詞検査のち除去部分の検査
+                for (auto pref : _get_literal_prefixes<Base, CharT, Traits>())
+                    if (num_str.starts_with(pref))
+                        return valid_without_prefix(num_str.substr(_get_literal_prefix_length<Base>()));
+            }
+            else
+                return valid_without_prefix(num_str);
+            return false;
+        }
+
+        // Cスタイル文字列用
+        template <std::size_t Base>
+        static constexpr bool _valid_input_number_string(const char* s)
+        {
+            return _valid_input_number_string<Base>(std::string_view(s));
+        }
+
 
         // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
         template <
@@ -651,9 +698,10 @@ namespace tunum
         >
         static constexpr std::array<int, ArrSize + 1> _make_number_array(std::basic_string_view<CharT, Traits> num_str)
         {
-            if (!_valid_input_number_string(num_str, Base))
+            if (!_valid_input_number_string<Base, CharT, Traits>(num_str))
                 throw std::invalid_argument("Specified not number string.");
 
+            num_str = num_str.substr(_get_literal_prefix_length<Base>());
             constexpr CharT s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
             std::array<int, ArrSize + 1> number_array = {};
             // ranges の reverse_view による反転は clang で怒られたため、
@@ -687,7 +735,7 @@ namespace tunum
 
         // 2の累乗進数からオブジェクト生成
         template <std::size_t Base, std::size_t ArrSize = calc_integral_digits_from_bitwidth<Base>(max_digits2)>
-        requires (Base > 1)
+        requires (Base == 2 || Base == 8 || Base == 16)
         static constexpr auto _make_by_digits_power2_arr(const std::array<int, ArrSize + 1>& num_arr)
         {
             // n 進数の n ではなく、実際に1桁として表現可能な(n - 1)のビット幅を見なければいけない

@@ -67,7 +67,13 @@ namespace tunum::literals
                 min_fmpint::base_data_digits2
             ) * min_fmpint::base_data_digits2 / 8;
             constexpr char s[] = { IntegralLiteral..., '\0' };
-            return fmpint<byte_size, Signed>{s};
+
+            using fmpint_t = fmpint<byte_size, Signed>;
+            static_assert(
+                fmpint_t::template _valid_input_number_string<base_number>(s),
+                "Invalid integer literal."
+            );
+            return fmpint_t{s};
         }
     }
 
