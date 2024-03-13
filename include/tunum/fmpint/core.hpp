@@ -17,8 +17,6 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
-    // TODO: 文字列からの構築時の例外テストを書く
-    // TODO: 剰余の演算、ビット反転とマスクでできるんなら計算量へらせね？
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
@@ -281,10 +279,10 @@ namespace tunum
         constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _mul(*this, fmpint{v}); }
 
         // 除算代入
-        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _div(*this, fmpint{v})[0]; }
+        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _div(*this, fmpint{v}); }
     
         // 剰余代入
-        constexpr auto& operator%=(const TuIntegral auto& v) { return *this = _div(*this, fmpint{v})[1]; }
+        constexpr auto& operator%=(const TuIntegral auto& v) { return *this -= (fmpint{v} *= (fmpint{*this} /= v)); }
 
         // 前後インクリメント
         constexpr auto& operator++() noexcept { return *this += 1;}
@@ -543,19 +541,14 @@ namespace tunum
             // 重いので計算せずとも自明なものはここではじいておく
             if (!v2)
                 throw std::invalid_argument{"0 div."};
-            if (!v1)
-                return std::array{fmpint{}, fmpint{}};
-            if (v1 < v2)
-                return std::array{fmpint{}, fmpint{v1}};
+            if (!v1 || v1 < v2)
+                return fmpint{};
             if (v2 == 1)
-                return std::array{fmpint{v1}, fmpint{}};
+                return fmpint{v1};
 
             if constexpr (is_min_size)
                 // 組み込みの演算子使えるならそっち優先
-                return std::array{
-                    fmpint{std::uint64_t{v1} / std::uint64_t{v2}},
-                    fmpint{std::uint64_t{v1} % std::uint64_t{v2}}
-                };
+                return fmpint{std::uint64_t{v1} / std::uint64_t{v2}};
             else {
                 // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
                 // ※約数みたいなもんで、計算回数を減らす
@@ -563,12 +556,12 @@ namespace tunum
                     const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
                     max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
                 ) {
-                    const auto [_quo, _rem] = half_fmpint::_div(
+                    const auto _quo = half_fmpint::_div(
                         (fmpint{v1} >>= min_zero_r_cnt).lower,
                         (fmpint{v2} >>= min_zero_r_cnt).lower
                     );
                     // 余りは桁を削ってはいけないので戻す
-                    return std::array{fmpint{_quo}, fmpint{_rem} <<= min_zero_r_cnt};
+                    return fmpint{_quo};
                 }
 
                 // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
@@ -582,7 +575,7 @@ namespace tunum
                         rem -= shifted_v2;
                     }
                 }
-                return std::array{quo, rem};
+                return quo;
             }
         }
 
