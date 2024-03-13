@@ -681,14 +681,6 @@ namespace tunum
             return false;
         }
 
-        // Cスタイル文字列用
-        template <std::size_t Base>
-        static constexpr bool _valid_input_number_string(const char* s)
-        {
-            return _valid_input_number_string<Base>(std::string_view(s));
-        }
-
-
         // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
         template <
             std::size_t Base,

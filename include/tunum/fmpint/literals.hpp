@@ -70,7 +70,7 @@ namespace tunum::literals
 
             using fmpint_t = fmpint<byte_size, Signed>;
             static_assert(
-                fmpint_t::template _valid_input_number_string<base_number>(s),
+                fmpint_t::template _valid_input_number_string<base_number>(std::string_view{s}),
                 "Invalid integer literal."
             );
             return fmpint_t{s};
