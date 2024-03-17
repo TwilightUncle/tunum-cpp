@@ -12,8 +12,8 @@ namespace tunum
 #ifndef TUNUM_FUNC_MAKE_FMPINT_OPERATOR
 #define TUNUM_FUNC_MAKE_FMPINT_OPERATOR(op_name, op) template <TuFmpIntegral T1, TuIntegral T2> \
     constexpr auto op_name(const T1& l, const T2& r) { return get_large_integral_t<T1, T2, T1>{l} op r; } \
-    template <TuFmpIntegral T> \
-    constexpr auto op_name(std::integral auto l, const T&  r) { return T{l} op r; }
+    template <std::integral T1, TuFmpIntegral T2> \
+    constexpr auto op_name(T1 l, const T2&  r) { return get_large_integral_t<T1, T2, T1>{l} op r; }
 #endif
 
     template <TuFmpIntegral T>
