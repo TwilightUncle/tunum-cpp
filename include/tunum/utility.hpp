@@ -47,15 +47,35 @@ namespace tunum
         }
         || std::is_arithmetic_v<T>;
 
-    namespace numbers
-    {
-        // 数値の定数定義
-
-        inline constexpr double log10_2 = std::numbers::ln2 / std::numbers::ln10;
-    }
-
     // 絶対値取得
-    inline constexpr auto abs(const TuArithmetic auto& v) { return v < 0 ? -v : v; }
+    inline constexpr auto abs(const TuArithmetic auto& v) { return (std::max)(v, -v); }
+
+    // 自然対数の近似値算出
+    // @tparam FloatT 任意の組み込み浮動小数点型
+    // @tparam N 求める項の数
+    // @param x 求めたい自然対数の真数
+    template <std::floating_point FloatT, std::size_t N = 60>
+    requires (N > 1)
+    inline constexpr FloatT ln(FloatT x)
+    {
+        if (x <= 0)
+            throw std::invalid_argument("Values less than 0 cannot be specified.");
+
+        const FloatT base_numerator = x - 1;
+        if (abs(base_numerator) >= 1)
+            return -ln<FloatT, N>(1 / x);
+        if (x < .5)
+            return ln<FloatT, N>(.5) + ln<FloatT, N>(2 * x);
+
+        FloatT numerator = base_numerator;
+        FloatT total = 0;
+        for (int i = 1, sign = 1; i < N; i++) {
+            total += (sign * numerator / i);
+            sign *= -1;
+            numerator *= base_numerator;
+        }
+        return total;
+    }
 
     // 小数点以下切り捨て
     inline constexpr auto floor(std::floating_point auto v) { return static_cast<std::int64_t>(v); }
@@ -67,6 +87,15 @@ namespace tunum
         return floored < v
             ? floored + 1
             : floored;
+    }
+
+    namespace numbers
+    {
+        // ---------------------------
+        // 数値の定数定義
+        // ---------------------------
+
+        inline constexpr double log10_2 = std::numbers::ln2 / std::numbers::ln10;
     }
 
     // ビット列を指定サイズを基準とした領域へアライメント
