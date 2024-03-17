@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        
+            
+            
+        
+
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/style.css">
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/vendor/prism.css">
+        <title>TunumCppについて</title>
+    </head>
+    <body>
+        <header id="header">
+            <div class="navigator"><h1>TunumCpp - C++20 Numbers Library</h1>
+
+<!-- - <input type="text" placeholder="検索未実装"> -->
+
+<ul>
+<li><a href="https://github.com/TwilightUncle/tunum-cpp">Repository (Github)</a></li>
+</ul>
+</div>
+            <ol class="breadcrumb">
+                <li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+                
+                    
+                
+            </ol>
+        </header>
+        <div class="content">
+            <aside id="sidebar" class="sidebar">
+                <h3>メニュー</h3>
+                <ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref.html">リファレンス</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">固定サイズ多倍長整数 - fmpint</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint/literals.html">整数リテラル</a></li>
+<li>コンストラクタ</li>
+<li>演算子</li>
+<li>ビット操作</li>
+<li>型キャスト</li>
+<li>メタ関数・コンセプト
+<!-- - マクロ --></li>
+</ul></li>
+</ul></li>
+</ul>
+
+            </aside>
+            <article>
+                <h1>TunumCppについて</h1>
+                <p><p>TunumCpp は、C++20以降を対象とした、コンパイル時の数値関連の処理を扱うヘッダオンリーライブラリです。</p>
+</p>
+
+                <h2 id="はじめに">はじめに</h2>
+
+<p>TunumCpp は数値の変換や数学関数など、数値を扱うことを支援するライブラリです。<br />
+ほとんどの機能は定数式上で使用可能です。</p>
+
+<p>下記のような機能が含まれます。</p>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">固定サイズ多倍長整数 - fmpint</a></li>
+<li>数学関数</li>
+<li>進数変換</li>
+</ul>
+
+<h2 id="インストール">インストール</h2>
+
+<p><a href="https://github.com/TwilightUncle/tunum-cpp">GitHub のリポジトリ</a>より、ソースを取得の上、任意の場所に展開します。</p>
+
+<p>本ライブラリを使用するプロジェクトのインクルードディレクトリに、下記パスを追加します。<br />
+※ソースの展開先を<code>path/to/tunum-cpp</code>とする</p>
+
+<ul>
+<li><code>path/to/tunum-cpp/include</code></li>
+</ul>
+
+<p>そのうえで、ソースコードに下記を記載することですべての機能を呼び出すことができます。</p>
+
+<ul>
+<li><code>#include &lt;tunum.hpp&gt;</code></li>
+</ul>
+
+<p>本ライブラリの機能は名前空間<code>tump</code>に定義されています。</p>
+
+<!-- より詳細なインクルードパスの制御方法については、TUNUM_COMMON_INCLUDEの項を参照ください。 -->
+
+<h2 id="動作確認環境">動作確認環境</h2>
+
+<p>C++20を有効にした状態の、下記の環境/コンパイラにおいてコンパイルし、動作を確認しています。</p>
+
+<ul>
+<li>Windows11
+
+<ul>
+<li>Visual Studio 2022 付属の VC++</li>
+</ul></li>
+<li>ubuntu 22.04 (Docker)
+
+<ul>
+<li>GCC: 10, 11, 12</li>
+<li>Clang: 12, 13, 14</li>
+</ul></li>
+</ul>
+
+            </article>
+            <aside id="table_of_contents" class="table-of-contents">
+                <h3>目次</h3>
+                <ul>
+                    
+                        <li>
+                            <a href="#%e3%81%af%e3%81%98%e3%82%81%e3%81%ab%0d">
+                                はじめに
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e3%82%a4%e3%83%b3%e3%82%b9%e3%83%88%e3%83%bc%e3%83%ab%0d">
+                                インストール
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e5%8b%95%e4%bd%9c%e7%a2%ba%e8%aa%8d%e7%92%b0%e5%a2%83%0d">
+                                動作確認環境
+                            </a>
+                        </li>
+                    
+                </ul>
+            </aside>
+        </div>
+        <footer id="footer">
+            <div class="copyright">
+© 2024 TwilightUncle
+</div>
+
+        </footer>
+        </div>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/style.js"></script>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/toggle.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/scroll.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/vendor/prism.js"></script>
+    </body>
+</html>

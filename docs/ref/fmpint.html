@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        
+            
+            
+        
+
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/style.css">
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/vendor/prism.css">
+        <title>fmpint - TunumCpp リファレンス</title>
+    </head>
+    <body>
+        <header id="header">
+            <div class="navigator"><h1>TunumCpp - C++20 Numbers Library</h1>
+
+<!-- - <input type="text" placeholder="検索未実装"> -->
+
+<ul>
+<li><a href="https://github.com/TwilightUncle/tunum-cpp">Repository (Github)</a></li>
+</ul>
+</div>
+            <ol class="breadcrumb">
+                <li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+                
+                    
+                    <li class="delimiter">></li>
+                    <li>
+                        <a href="https://twilightuncle.github.io/tunum-cpp/ref.html">
+                            ref
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li class="delimiter">></li>
+                    <li>
+                        <a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">
+                            fmpint
+                        </a>
+                    </li>
+                    
+                
+            </ol>
+        </header>
+        <div class="content">
+            <aside id="sidebar" class="sidebar">
+                <h3>メニュー</h3>
+                <ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref.html">リファレンス</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">固定サイズ多倍長整数 - fmpint</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint/literals.html">整数リテラル</a></li>
+<li>コンストラクタ</li>
+<li>演算子</li>
+<li>ビット操作</li>
+<li>型キャスト</li>
+<li>メタ関数・コンセプト
+<!-- - マクロ --></li>
+</ul></li>
+</ul></li>
+</ul>
+
+            </aside>
+            <article>
+                <h1>fmpint - TunumCpp リファレンス</h1>
+                <p></p>
+
+                <pre><code class="language-cpp">namespace tunum
+{
+    // 実装クラス
+    template &lt;std::size_t Bytes, bool Signed = false&gt;
+    struct fmpint { ... };
+
+    // 型エイリアス
+    using int128_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 1), true&gt;;
+    using int256_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 2), true&gt;;
+    using int512_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 3), true&gt;;
+
+    using uint128_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 1), false&gt;;
+    using uint256_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 2), false&gt;;
+    using uint512_t = fmpint&lt;(sizeof(std::uint64_t) &lt;&lt; 3), false&gt;;
+}
+</code></pre>
+
+<h3 id="fmpint のテンプレートパラメータ">fmpint のテンプレートパラメータ</h3>
+
+<ul>
+<li>Bytes - 格納可能したい値の最大サイズを<code>byte</code>単位で指定します。例えば、最大ビット幅が 128 の整数は、16 (128 / 8) を指定します。</li>
+<li>Signed - 符号の有無を指定します。<code>true</code>とした場合符号あり整数となり、<code>false</code>とした場合は符号なし整数となります。</li>
+</ul>
+
+<h3 id="fmpint の定義済み型エイリアス">fmpint の定義済み型エイリアス</h3>
+
+<ul>
+<li>int128_t - ビット幅が 128 ビットの符号あり整数です。<br />
+下記範囲の整数を扱うことができます。<br />
+<code>-170,141,183,460,469,231,731,687,303,715,884,105,728</code> ~ <code>170,141,183,460,469,231,731,687,303,715,884,105,727</code></li>
+<li>int256_t - ビット幅が 256 ビットの符号あり整数です。</li>
+<li>int512_t - ビット幅が 512 ビットの符号あり整数です。</li>
+<li>uint128_t - ビット幅が 128 ビットの符号なし整数です。<br />
+下記範囲の整数を扱うことができます。<br />
+<code>0</code> ~ <code>340,282,366,920,938,463,463,374,607,431,768,211,455</code></li>
+<li>uint256_t - ビット幅が 256 ビットの符号なし整数です。</li>
+<li>uint512_t - ビット幅が 512 ビットの符号なし整数です。</li>
+</ul>
+
+<h2 id="概要">概要</h2>
+
+<p><code>tunum::fmpint</code>は組み込みの整数型には収まらないような、大きな値を扱うことのできる整数型です。</p>
+
+<p>また、上記に加えて下記の特徴を持っています。</p>
+
+<ul>
+<li><code>int</code>型などの組み込みの整数と同様の演算子を適用することが可能です。</li>
+<li>内部的なバイナリ表現は組み込みの整数型と同様で、ビット幅のみが異なる構造のため、ビット操作を直感的に行うことができます。</li>
+<li>コンパイル時点で格納できる最大値が固定され、動的に追加で必要な領域を確保することはありません。<br />
+計算の過程で格納可能な最大値を超過した場合はあふれた上位ビットが切り捨てられます。</li>
+<li>テンプレートパラメータにより、任意のサイズを指定できます。</li>
+<li><code>tunum::fmpint</code>のインスタンスおよび、すべてのメンバ関数をコンパイル時に使用できます。<br />
+※サイズが大きいほど計算回数も多くなるため、コンパイル時は計算ステップ数の上限に注意が必要です。</li>
+<li>内部実装を流用した、いくつかのビット操作用メンバ関数が用意されています。</li>
+</ul>
+
+<p>なお、現状、浮動小数点型との演算は未定義です。</p>
+
+<h2 id="指定サイズと内部表現">指定サイズと内部表現</h2>
+
+<p><code>tunum::fmpint</code>はテンプレートパラメータ<code>Bytes</code>で格納可能な整数の最大ビット幅を決定します。<br />
+この時、実装の都合上、内部表現のサイズは単純に<code>Bytes</code>ではなく、<code>Bytes</code>を格納可能な最も小さい 2 の n 乗バイトとなります。</p>
+
+<p>例えば、下記 2 つの<code>tump::fmpint</code>は型として異なりますが、内部表現や整数としてのふるまいは全く同じで、どちらも 128 ビット符号あり整数として動作します。</p>
+
+<ul>
+<li><code>tunum::fmpint&lt;14, true&gt;</code></li>
+<li><code>tunum::fmpint&lt;16, true&gt;</code></li>
+</ul>
+
+<p>また、内部表現の最小ビット幅は 64 であり、<code>Bytes</code>に 8 以下の値を指定しても、8 を指定した場合と同等の内部表現となり、64 ビット整数として動作します。</p>
+
+<h2 id="異なるサイズの整数と二項演算、符号有無">異なるサイズの整数と二項演算、符号有無</h2>
+
+<p>各二項演算子に対して、式の結果型が下記表のとおりになります。<br />
+また、組み込み整数型との二項演算も可能で、必ず<code>tunum::fmpint</code>が組み込み整数型より大きいサイズの型とみなされます。</p>
+
+<table>
+<thead>
+<tr>
+<th>二項演算子の種類</th>
+<th>結果のサイズ</th>
+<th>結果の符号有無</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>四則演算と剰余</td>
+<td>両オペランドのうち、大きいほうのサイズ</td>
+<td>左オペランドの符号有無</td>
+</tr>
+
+<tr>
+<td>シフト演算を除く二項ビット演算</td>
+<td>両オペランドのうち、大きいほうのサイズ</td>
+<td>左オペランドの符号有無</td>
+</tr>
+
+<tr>
+<td>シフト演算</td>
+<td>左オペランドのサイズ</td>
+<td>左オペランドの符号有無</td>
+</tr>
+
+<tr>
+<td>代入演算、複合代入演算</td>
+<td>左オペランドのサイズ</td>
+<td>左オペランドの符号有無</td>
+</tr>
+
+<tr>
+<td>比較演算</td>
+<td>bool</td>
+<td>なし</td>
+</tr>
+</tbody>
+</table>
+
+<p>演算子についての詳細な説明は演算子のページを参照ください。</p>
+
+<h2 id="詳細なリファレンス一覧">詳細なリファレンス一覧</h2>
+
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>概要</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint/literals.html">整数リテラル</a></td>
+<td><code>tunum::fmpint</code>の数値リテラルリファレンス。</td>
+</tr>
+
+<tr>
+<td>コンストラクタ</td>
+<td>コンストラクタについてのリファレンス。組み込み整数や、異なるサイズと符合有無が渡された際の動作についても説明します。</td>
+</tr>
+
+<tr>
+<td>演算子</td>
+<td><code>tunum::fmpint</code>に対して定義された演算子についてのリファレンスです。</td>
+</tr>
+
+<tr>
+<td>ビット操作</td>
+<td><code>tunum::fmpint</code>が持つ、ビット操作用に定義されたメンバ関数のリファレンスです。</td>
+</tr>
+
+<tr>
+<td>型キャスト</td>
+<td><code>tunum::fmpint</code>から、組み込み関数などの異なる型への型キャストのリファレンスです。</td>
+</tr>
+
+<tr>
+<td>メタ関数・コンセプト</td>
+<td><code>tunum::fmpint</code>に関連する型判定や、コンセプトについてのリファレンスです。</td>
+</tr>
+</tbody>
+</table>
+
+            </article>
+            <aside id="table_of_contents" class="table-of-contents">
+                <h3>目次</h3>
+                <ul>
+                    
+                        <li>
+                            <a href="#%e6%a6%82%e8%a6%81%0d">
+                                概要
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e6%8c%87%e5%ae%9a%e3%82%b5%e3%82%a4%e3%82%ba%e3%81%a8%e5%86%85%e9%83%a8%e8%a1%a8%e7%8f%be%0d">
+                                指定サイズと内部表現
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e7%95%b0%e3%81%aa%e3%82%8b%e3%82%b5%e3%82%a4%e3%82%ba%e3%81%ae%e6%95%b4%e6%95%b0%e3%81%a8%e4%ba%8c%e9%a0%85%e6%bc%94%e7%ae%97%e3%80%81%e7%ac%a6%e5%8f%b7%e6%9c%89%e7%84%a1%0d">
+                                異なるサイズの整数と二項演算、符号有無
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e8%a9%b3%e7%b4%b0%e3%81%aa%e3%83%aa%e3%83%95%e3%82%a1%e3%83%ac%e3%83%b3%e3%82%b9%e4%b8%80%e8%a6%a7%0d">
+                                詳細なリファレンス一覧
+                            </a>
+                        </li>
+                    
+                </ul>
+            </aside>
+        </div>
+        <footer id="footer">
+            <div class="copyright">
+© 2024 TwilightUncle
+</div>
+
+        </footer>
+        </div>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/style.js"></script>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/toggle.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/scroll.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/vendor/prism.js"></script>
+    </body>
+</html>

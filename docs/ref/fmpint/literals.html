@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        
+            
+            
+        
+
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/style.css">
+        <link rel="stylesheet" href="https://twilightuncle.github.io/tunum-cpp/assets/css/vendor/prism.css">
+        <title>固定サイズ多倍長整数リテラル - TunumCpp リファレンス</title>
+    </head>
+    <body>
+        <header id="header">
+            <div class="navigator"><h1>TunumCpp - C++20 Numbers Library</h1>
+
+<!-- - <input type="text" placeholder="検索未実装"> -->
+
+<ul>
+<li><a href="https://github.com/TwilightUncle/tunum-cpp">Repository (Github)</a></li>
+</ul>
+</div>
+            <ol class="breadcrumb">
+                <li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+                
+                    
+                    <li class="delimiter">></li>
+                    <li>
+                        <a href="https://twilightuncle.github.io/tunum-cpp/ref.html">
+                            ref
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li class="delimiter">></li>
+                    <li>
+                        <a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">
+                            fmpint
+                        </a>
+                    </li>
+                    
+                
+                    
+                    <li class="delimiter">></li>
+                    <li>
+                        <a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint/literals.html">
+                            literals
+                        </a>
+                    </li>
+                    
+                
+            </ol>
+        </header>
+        <div class="content">
+            <aside id="sidebar" class="sidebar">
+                <h3>メニュー</h3>
+                <ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/index.html">Index</a></li>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref.html">リファレンス</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html">固定サイズ多倍長整数 - fmpint</a>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint/literals.html">整数リテラル</a></li>
+<li>コンストラクタ</li>
+<li>演算子</li>
+<li>ビット操作</li>
+<li>型キャスト</li>
+<li>メタ関数・コンセプト
+<!-- - マクロ --></li>
+</ul></li>
+</ul></li>
+</ul>
+
+            </aside>
+            <article>
+                <h1>固定サイズ多倍長整数リテラル - TunumCpp リファレンス</h1>
+                <p></p>
+
+                <h3 id="リテラルの接頭詞">リテラルの接頭詞</h3>
+
+<table>
+<thead>
+<tr>
+<th>prefix</th>
+<th>　概要</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>なし</td>
+<td>10 進数リテラル</td>
+</tr>
+
+<tr>
+<td><code>0b</code>, <code>0B</code></td>
+<td>2 進数リテラル</td>
+</tr>
+
+<tr>
+<td><code>0</code></td>
+<td>8 進数リテラル</td>
+</tr>
+
+<tr>
+<td><code>0x</code>, <code>0X</code></td>
+<td>16 進数リテラル</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="リテラルの接尾語">リテラルの接尾語</h3>
+
+<table>
+<thead>
+<tr>
+<th>suffix</th>
+<th>概要</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>_fmp</code></td>
+<td>符号ありの固定サイズ多倍長整数リテラル</td>
+</tr>
+
+<tr>
+<td><code>_ufmp</code></td>
+<td>符号なしの固定サイズ多倍長整数リテラル</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="概要">概要</h2>
+
+<p>TunumCpp では<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築するユーザー定義リテラルを定義しています。<br />
+符号ありの<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築したい場合は数値リテラルの末尾に<code>_fmp</code>を、符号なしの<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築したい場合は<code>_ufmp</code>を指定します。</p>
+
+<p>リテラルの接頭詞については、組み込みの整数リテラルと同様に、<code>0</code> または、<code>0</code>と特定のアルファベットを指定することで、任意の進数表記で<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築できます。</p>
+
+<p>また、組み込みの整数リテラルと同様に、シングルクオテーションマークによる区切り表記が可能です。<br />
+ただし、下記のいずれかに該当するようにシングルクオテーションマークを記述すると、コンパイルエラーとなります。</p>
+
+<ul>
+<li>リテラルの先頭にシングルクオテーションマークが存在する</li>
+<li>prefix の直後にシングルクオテーションマークが存在する</li>
+<li>シングルクオテーションマークが 2 回以上連続で出現する</li>
+</ul>
+
+<h2 id="固定サイズ多倍長整数リテラルのサイズ">固定サイズ多倍長整数リテラルのサイズ</h2>
+
+<p>suffix へ<code>_fmp</code>または、<code>_ufmp</code>を付与した整数リテラルは、リテラルの桁数から表現可能なサイズを算出し、自動的に適切な<code>Bytes</code>の<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築します。</p>
+
+<h2 id="固定サイズ多倍長整数リテラルと符合">固定サイズ多倍長整数リテラルと符合</h2>
+
+<p>リテラルの前方に<code>+</code>や<code>-</code>を記載しても、整数リテラルに符号は含まれません。<br />
+いったん正の整数として<a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a>を構築したのち、単項演算子として適用が行われます。</p>
+
+<h2 id="例">例</h2>
+
+<pre><code class="language-cpp">#include &lt;tunum.hpp&gt;
+using namespace tunum::literals;
+
+// v1 と v2 は全く同じ符号ありの fmpint インスタンスを構築する
+constexpr auto v1 = 12345_fmp;
+constexpr auto v2 = 12'345_fmp;
+
+// v1 と v2 は全く同じ符号なしの fmpint インスタンスを構築する
+constexpr auto v3 = 12345_ufmp;
+constexpr auto v4 = 12'345_ufmp;
+
+// 2 進数リテラル。0b と 0B で結果に違いはない
+constexpr auto v5 = 0b1111'0000'1100_ufmp;
+constexpr auto v6 = 0B1111'0000'1100_ufmp;
+
+// 8 進数リテラル
+constexpr auto v7 = 037'7777'7777_fmp;
+
+// 16進数リテラル。prefix の x や a ~ f は大文字と小文字で結果に違いはない
+constexpr auto v8 = 0xFFFF'FFFF'FFFF'FFFF_ufmp;
+constexpr auto v9 = 0Xffff'ffff'ffff'ffff_ufmp;
+
+// 符号なし64ビット整数で表現できないサイズの整数リテラルも可能
+constexpr auto v10 = 340'282'366'920'938'463'463'374'607'431'768'211'455_ufmp;
+
+// 以下は全てエラーのため、コメントアウトを外すとコンパイルエラーが発生する
+// constexpr auto v11 = 088888_fmp;
+// constexpr auto v12 = 0b22222_fmp;
+// constexpr auto v13 = 0x'FFFFFF_fmp;
+// constexpr auto v14 = 1234''5_fmp;
+// constexpr auto v15 = 1234uio9_fmp;
+
+int main() {}
+</code></pre>
+
+<h2 id="関連リンク">関連リンク</h2>
+
+<ul>
+<li><a href="https://twilightuncle.github.io/tunum-cpp/ref/fmpint.html"><code>tunum::fmpint</code></a></li>
+<li><code>tunum::fmpint</code>のコンストラクタ(文字列による構築)</li>
+</ul>
+
+            </article>
+            <aside id="table_of_contents" class="table-of-contents">
+                <h3>目次</h3>
+                <ul>
+                    
+                        <li>
+                            <a href="#%e6%a6%82%e8%a6%81%0d">
+                                概要
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e5%9b%ba%e5%ae%9a%e3%82%b5%e3%82%a4%e3%82%ba%e5%a4%9a%e5%80%8d%e9%95%b7%e6%95%b4%e6%95%b0%e3%83%aa%e3%83%86%e3%83%a9%e3%83%ab%e3%81%ae%e3%82%b5%e3%82%a4%e3%82%ba%0d">
+                                固定サイズ多倍長整数リテラルのサイズ
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e5%9b%ba%e5%ae%9a%e3%82%b5%e3%82%a4%e3%82%ba%e5%a4%9a%e5%80%8d%e9%95%b7%e6%95%b4%e6%95%b0%e3%83%aa%e3%83%86%e3%83%a9%e3%83%ab%e3%81%a8%e7%ac%a6%e5%90%88%0d">
+                                固定サイズ多倍長整数リテラルと符合
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e4%be%8b%0d">
+                                例
+                            </a>
+                        </li>
+                    
+                        <li>
+                            <a href="#%e9%96%a2%e9%80%a3%e3%83%aa%e3%83%b3%e3%82%af%0d">
+                                関連リンク
+                            </a>
+                        </li>
+                    
+                </ul>
+            </aside>
+        </div>
+        <footer id="footer">
+            <div class="copyright">
+© 2024 TwilightUncle
+</div>
+
+        </footer>
+        </div>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/style.js"></script>
+        <script type="module" src="https://twilightuncle.github.io/tunum-cpp/assets/js/toggle.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/scroll.js"></script>
+        <script type="text/javascript" src="https://twilightuncle.github.io/tunum-cpp/assets/js/vendor/prism.js"></script>
+    </body>
+</html>
