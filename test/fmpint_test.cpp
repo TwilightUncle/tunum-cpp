@@ -410,6 +410,8 @@ TEST(TunumFmpintTest, StringConstructorTest)
     constexpr auto fmp_int_v8 = 00000377'77777777'77777777'77777777'77777777'77777777_ufmp;
     EXPECT_EQ(fmp_int_v3, fmp_int_v7);
     EXPECT_EQ(fmp_int_v7, fmp_int_v8);
+    constexpr auto fmp_int_v9 = 18'446'744'073'709'551'616_ufmp + (-18'446'744'073'709'551'616_fmp);
+    EXPECT_EQ(fmp_int_v9, 0);
 
     EXPECT_THROW(tunum::uint128_t{"0a123"}, std::invalid_argument);
     EXPECT_THROW(tunum::uint128_t{"0b1201"}, std::invalid_argument);

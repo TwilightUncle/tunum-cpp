@@ -583,7 +583,8 @@ namespace tunum
         // 10 の n乗をあらかじめ計算しておく
         static constexpr auto _calc_table_10_n()
         {
-            std::array<fmpint, max_digits10 + 1> table{};
+            using unsigned_t = fmpint<Bytes, false>;
+            std::array<unsigned_t, max_digits10 + 1> table{};
             int i = 1;
             table[0] = 1;
             if constexpr (!is_min_size) {
@@ -591,11 +592,11 @@ namespace tunum
                 for (; i <= half_fmpint::max_digits10; i++)
                     table[i] = half_table[i];
                 for (const auto begin_i = half_fmpint::max_digits10; i <= max_digits10; i++)
-                    table[i] = fmpint{table[half_fmpint::max_digits10]} *= table[i - begin_i];
+                    table[i] = unsigned_t{table[half_fmpint::max_digits10]} *= table[i - begin_i];
             }
             else
                 for (; i <= max_digits10; i++)
-                    table[i] = fmpint{table[i - 1]} * 10;
+                    table[i] = unsigned_t{table[i - 1]} * 10;
             return table;
         }
 
