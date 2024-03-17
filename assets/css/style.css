@@ -1,0 +1,260 @@
+:root {
+    font-size: 16px;
+    --main-color: hsl(200, 40%, 50%);
+    --border-color: #bbb;
+    --bk-color: #ddd;
+
+    --sidebar-width: 300px;
+}
+
+body {
+    margin: 0;
+    overflow-y: scroll;
+}
+
+ol, ul {
+    padding-left: 0;
+}
+
+li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: #000;
+}
+
+a:hover {
+    color: var(--main-color);
+}
+
+header {
+    padding: 0;
+    position: sticky;
+    top: 0;
+    left: 0;
+    border-bottom: var(--border-color) solid 1px;
+    z-index: 1;
+    background-color: var(--main-color);
+}
+
+header > .navigator {
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header > .navigator > h1 {
+    font-size: 24px;
+    margin: 0;
+    color: #fff;
+}
+
+header > .navigator > ul {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+}
+
+header > .navigator > ul > li {
+    margin: 0px 16px;
+    font-size: 20px;
+    color: #fff;
+}
+
+header > .navigator input {
+    border: var(--border-color) solid 1px;
+    padding: 3px;
+    font-size: 16px;
+    color: #000;
+    background-color: #fff;
+}
+
+header > .navigator a {
+    color: var(--border-color);
+}
+
+header > .navigator a:hover {
+    color: #fff;
+}
+
+header > .breadcrumb {
+    display: flex;
+    background-color: var(--bk-color);
+    padding: 4px 24px;
+    margin: 0;
+    border-top: var(--border-color) solid 1px;
+    font-size: 14px;
+}
+
+header > .breadcrumb > li {
+    margin-right: 16px;
+}
+
+header > .breadcrumb > li.delimiter {
+    color: #888;
+}
+
+.content {
+    display: flex;
+    border-bottom: var(--border-color) solid 1px;
+}
+
+.content > .sidebar {
+    padding: 8px 24px;
+    width: var(--sidebar-width);
+    background-color: #fff;
+    border-right: var(--border-color) solid 1px;
+    overflow-y: scroll;
+    position: sticky;
+    box-sizing: border-box;
+}
+
+.content > aside ul {
+    width: 100%;
+}
+
+.content > aside li {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.content > aside li.watching {
+    background-color: var(--bk-color);
+}
+
+.content > aside li > a {
+    display: inline-block;
+    width: 100%;
+}
+
+.content > .sidebar li {
+    padding: 0.25rem 0;
+    padding-left: 12px;
+    position: relative;
+    color: var(--border-color);
+}
+
+.content > .sidebar li button.toggle-btn {
+    position: absolute;
+    display: block;
+    top: calc(0.25rem + 0.5rem);
+    left: 0px;
+    color: #888;
+    height: 0;
+    width: 0;
+    padding: 0;
+    border-left: var(--main-color) solid 8px;
+    border-top: transparent solid 4px;
+    border-bottom: transparent solid 4px;
+    border-right: none;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.content > .sidebar li button.toggle-btn.active {
+    transform: rotate(90deg);
+}
+
+.content > .sidebar > ul ul {
+    padding-right: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.content > article {
+    padding: 8px 24px;
+    max-width: calc(100vw - var(--sidebar-width) - var(--sidebar-width));
+    min-width: calc(100vw - var(--sidebar-width) - var(--sidebar-width));
+    border-right: var(--border-color) solid 1px;
+}
+
+.content > article h1,
+.content > article h2 {
+    border-bottom: var(--border-color) solid 1px;
+}
+
+.content > article a {
+    color: var(--main-color);
+    text-decoration: underline;
+}
+
+.content > article a:hover {
+    text-decoration: none;
+}
+
+.content > article ul > li {
+    list-style-type: disc;
+    margin-left: 24px;
+}
+
+.content > article ol > li {
+    list-style-type: decimal;
+    margin-left: 24px;
+}
+
+.content > article ol > li::marker {
+    font-weight: bold;
+}
+
+.content > .table-of-contents {
+    padding: 8px 24px;
+    width: var(--sidebar-width);
+    background-color: #fff;
+    overflow-y: scroll;
+    position: sticky;
+    box-sizing: border-box;
+}
+
+.content > .table-of-contents li {
+    font-size: 14px;
+    padding: 0.25rem;
+    padding-left: 8px;
+}
+
+footer {
+    padding: 8px 24px;
+    background-color: var(--bk-color);
+}
+
+footer p {
+    text-align: center;
+    margin: 0;
+}
+
+footer .copyright {
+    text-align: right;
+    font-size: 14px;
+}
+
+table {
+    border-collapse:  collapse;
+}
+
+th, td {
+    border: var(--border-color) solid 1px;
+    padding: 4px 8px;
+}
+
+th {
+    background-color: var(--bk-color);
+}
+
+code {
+    background-color: #f5f2f0;
+    font-family: Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;
+    font-size: 14px;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+
+.content pre[class*=language-] {
+    /* prism のスタイル上書き */
+    font-size: 14px;
+}
+

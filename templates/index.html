@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        {{ if eq .base_url "https://twilightuncle.github.io/tunum-cpp" }}
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-HC3V49QTQ8"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', 'G-HC3V49QTQ8');
+            </script>
+        {{ end }}
+
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="{{ .assets_path }}/css/style.css">
+        <link rel="stylesheet" href="{{ .assets_path }}/css/vendor/prism.css">
+        <title>{{ .title }}</title>
+    </head>
+    <body>
+        <header id="header">
+            <div class="navigator">{{ .header }}</div>
+            <ol class="breadcrumb">
+                <li><a href="{{ .base_url }}/index.html">Index</a></li>
+                {{ range $i, $item := .breadcrumbs }}
+                    {{ if ne (index $item 0) "index" }}
+                    <li class="delimiter">></li>
+                    <li>
+                        {{ if ne (index $item 1) "" }}<a href="{{ index $item 1 }}">{{ end }}
+                            {{ index $item 0 }}
+                        {{ if ne (index $item 1) "" }}</a>{{ end }}
+                    </li>
+                    {{end}}
+                {{end}}
+            </ol>
+        </header>
+        <div class="content">
+            <aside id="sidebar" class="sidebar">
+                <h3>メニュー</h3>
+                {{ .sidebar }}
+            </aside>
+            <article>
+                <h1>{{ .title }}</h1>
+                <p>{{ .overview }}</p>
+
+                {{ .content }}
+            </article>
+            <aside id="table_of_contents" class="table-of-contents">
+                <h3>目次</h3>
+                <ul>
+                    {{ range $i, $item := .idlinks2 }}
+                        <li>
+                            {{ if ne (index $item 2) "" }}<a href="#{{ index $item 2 }}">{{ end }}
+                                {{ index $item 0 }}
+                            {{ if ne (index $item 2) "" }}</a>{{ end }}
+                        </li>
+                    {{ end }}
+                </ul>
+            </aside>
+        </div>
+        <footer id="footer">
+            {{ .footer }}
+        </footer>
+        </div>
+        <script type="module" src="{{ .assets_path }}/js/style.js"></script>
+        <script type="module" src="{{ .assets_path }}/js/toggle.js"></script>
+        <script type="text/javascript" src="{{ .assets_path }}/js/scroll.js"></script>
+        <script type="text/javascript" src="{{ .assets_path }}/js/vendor/prism.js"></script>
+    </body>
+</html>
