@@ -17,6 +17,7 @@ namespace tunum
 
     // 固定サイズの多倍長整数
     // 内部的な演算方法は組み込みの整数に準拠
+    // TODO: 組み込み浮動小数点型とのキャスト関連を考える
     // TODO: 文字列からの構築時、Ryuあたりのアルゴリズムを用いて効率化できるか調べる
     template <std::size_t Bytes, bool Signed = false>
     struct fmpint
