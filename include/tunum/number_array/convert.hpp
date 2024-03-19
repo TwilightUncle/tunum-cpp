@@ -35,21 +35,21 @@ namespace tunum
     // @tparam Traits 文字特性
     // @param base_number 進数
     template <class CharT, class Traits = std::char_traits<CharT>>
-    inline constexpr std::array<std::basic_string_view<CharT, Traits>, 2> get_literal_prefixes(std::size_t base_number)
+    inline constexpr auto get_literal_prefixes(std::size_t base_number)
+        -> std::array<std::basic_string_view<CharT, Traits>, 2>
     {
         switch (base_number) {
             case 2:
-                return std::array{
+                return {
                     TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0b"),
                     TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0B")
                 };
             case 8:
-                return std::array{
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0"),
-                    std::basic_string_view<CharT, Traits>{}
+                return {
+                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0")
                 };
             case 16:
-                return std::array{
+                return {
                     TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0x"),
                     TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X")
                 };
@@ -126,12 +126,15 @@ namespace tunum
     // @param num_str 対象の数値文字列
     // @param base_number 進数
     template <class CharT, class Traits = std::char_traits<CharT>>
-    inline constexpr bool validate_input_number_string(std::basic_string_view<CharT, Traits> num_str, std::size_t base_number)
-    {
+    inline constexpr bool validate_input_number_string(
+        std::basic_string_view<CharT, Traits> num_str,
+        std::size_t base_number
+    ) {
+        using str_view_t = std::basic_string_view<CharT, Traits>;
         // 接頭詞を除外した部分の検証
-        constexpr auto valid_without_prefix = [](std::basic_string_view<CharT, Traits> _num_str, std::size_t _base_number) -> bool {
+        constexpr auto valid_without_prefix = [](str_view_t _num_str, std::size_t _base_number) -> bool {
             constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
-            constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
+            constexpr auto npos = str_view_t::npos;
 
             // シングルクオテーションから開始する文字列はNG
             if (_num_str.starts_with(double_s_quote[0]))
@@ -147,14 +150,13 @@ namespace tunum
             return true;
         };
 
-        if (const auto prefix_len = get_literal_prefix_length(base_number); prefix_len > 0) {
+        if (const auto prefix_len = get_literal_prefix_length(base_number); !prefix_len)
+            return valid_without_prefix(num_str, base_number);
+        else
             // 接頭詞検査のち除去部分の検査
             for (auto pref : get_literal_prefixes<CharT, Traits>(base_number))
                 if (num_str.starts_with(pref))
                     return valid_without_prefix(num_str.substr(prefix_len), base_number);
-        }
-        else
-            return valid_without_prefix(num_str, base_number);
         return false;
     }
 
@@ -177,8 +179,10 @@ namespace tunum
         class CharT,
         class Traits = std::char_traits<CharT>
     >
-    static constexpr std::array<int, ArrSize + 1> convert_str_to_number_array(std::basic_string_view<CharT, Traits> num_str, std::size_t base_number)
-    {
+    static constexpr std::array<int, ArrSize + 1> convert_str_to_number_array(
+        std::basic_string_view<CharT, Traits> num_str,
+        std::size_t base_number
+    ) {
         if (!validate_input_number_string<CharT, Traits>(num_str, base_number))
             throw std::invalid_argument("Specified not number string.");
 
