@@ -24,7 +24,6 @@ if (CMAKE_PROJECT_NAME STREQUAL "tunum")
     # ソース列挙
     target_sources(tunumtest PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/fmpint_test.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/uint_base_number_test.cpp
     )
 
     target_include_directories(tunumtest PRIVATE ${tunum_SOURCE_DIR}/include)

@@ -5,10 +5,10 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include <concepts>
-#include <numbers>
 #include <bit>
 #include <string_view>
+
+#include TUNUM_COMMON_INCLUDE(math.hpp)
 
 #ifndef TUNUM_MAKE_ANY_TYPE_STR_VIEW
 // 任意の文字型のstring_viewを生成
@@ -26,76 +26,52 @@
 
 namespace tunum
 {
-    // 算術型か、整数値と下記の操作ができる型
-    // - 全順序比較
-    // - 四則演算
-    // - 単項 マイナス
+    // 整数の配列やコンテナ(添え字アクセスが可能なこと)
     template <class T>
-    concept TuArithmetic
-        = requires (T v) {
-            { v } -> std::totally_ordered;
-            { v } -> std::totally_ordered_with<int>;
-            { v.operator-() } -> std::convertible_to<T>;
-            { v + std::declval<int>() } -> std::convertible_to<T>;
-            { v + std::declval<T>() } -> std::convertible_to<T>;
-            { v - std::declval<int>() } -> std::convertible_to<T>;
-            { v - std::declval<T>() } -> std::convertible_to<T>;
-            { v * std::declval<int>() } -> std::convertible_to<T>;
-            { v * std::declval<T>() } -> std::convertible_to<T>;
-            { v / std::declval<int>() } -> std::convertible_to<T>;
-            { v / std::declval<T>() } -> std::convertible_to<T>;
-        }
-        || std::is_arithmetic_v<T>;
+    concept TuAnyBaseNumbers = requires (T& v) {
+        { std::size(v) } -> std::convertible_to<std::size_t>;
+        { v[std::declval<std::size_t>()] } -> std::convertible_to<int>;
+        { *std::begin(v) } -> std::convertible_to<int>;
+        std::end(v);
+    };
 
-    // 絶対値取得
-    inline constexpr auto abs(const TuArithmetic auto& v) { return (std::max)(v, -v); }
-
-    // 自然対数の近似値算出
-    // @tparam FloatT 任意の組み込み浮動小数点型
-    // @tparam N 求める項の数
-    // @param x 求めたい自然対数の真数
-    template <std::floating_point FloatT, std::size_t N = 60>
-    requires (N > 1)
-    inline constexpr FloatT ln(FloatT x)
+    // 数値配列の内容を検証  
+    // @param base 入力した数値列の進数
+    // @param numbers 検査対象の数値列
+    inline constexpr bool validate_numbers(std::size_t base, const TuAnyBaseNumbers auto& numbers)
     {
-        if (x <= 0)
-            throw std::invalid_argument("Values less than 0 cannot be specified.");
-
-        const FloatT base_numerator = x - 1;
-        if (abs(base_numerator) >= 1)
-            return -ln<FloatT, N>(1 / x);
-        if (x < .5)
-            return ln<FloatT, N>(.5) + ln<FloatT, N>(2 * x);
-
-        FloatT numerator = base_numerator;
-        FloatT total = 0;
-        for (int i = 1, sign = 1; i < N; i++) {
-            total += (sign * numerator / i);
-            sign *= -1;
-            numerator *= base_numerator;
-        }
-        return total;
+        // 格納されている値が該当進数の一桁に収まっているか検証
+        for (auto num : numbers)
+            if (num >= base || 0 > num)
+                return false;
+        return true;
     }
 
-    // 小数点以下切り捨て
-    inline constexpr auto floor(std::floating_point auto v) { return static_cast<std::int64_t>(v); }
+    // 進数変換結果の桁数を計算
+    // @param from_base 変換前の進数
+    // @param to_base 変換後の進数
+    // @param from_numbers 変換前の数値列
+    inline constexpr std::size_t calc_base_number_digits(
+        std::size_t from_base,
+        std::size_t to_base,
+        const TuAnyBaseNumbers auto& numbers
+    ) {
+        if (!validate_numbers(from_base, numbers))
+            throw std::invalid_argument("Specified invalid numbers.");
 
-    // 小数点以下切り上げ
-    inline constexpr auto ceil(std::floating_point auto v)
-    {
-        const auto floored = tunum::floor(v);
-        return floored < v
-            ? floored + 1
-            : floored;
-    }
+        const std::size_t len = std::size(numbers);
+        if (from_base == to_base)
+            return len;
 
-    namespace numbers
-    {
-        // ---------------------------
-        // 数値の定数定義
-        // ---------------------------
-
-        inline constexpr double log10_2 = std::numbers::ln2 / std::numbers::ln10;
+        double max_v{}, cur_v{}, r = 1. / from_base;
+        for (std::size_t i = 0; i < len; i++) {
+            max_v += double(from_base - 1) * r;
+            cur_v += double(numbers[i]) * r;
+            r /= from_base;
+        }
+        const double value_rate = ::tunum::log(max_v, cur_v);
+        const double digits_rate = ::tunum::log(to_base, from_base);
+        return ::tunum::ceil((value_rate + len - 1) * digits_rate);
     }
 
     // ビット列を指定サイズを基準とした領域へアライメント
