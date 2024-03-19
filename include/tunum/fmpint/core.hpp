@@ -2,7 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 
 #include TUNUM_COMMON_INCLUDE(fmpint/meta_function.hpp)
-#include TUNUM_COMMON_INCLUDE(utility.hpp)
+#include TUNUM_COMMON_INCLUDE(number_array.hpp)
 
 #include <array>
 #include <stdexcept>
@@ -112,14 +112,22 @@ namespace tunum
             constexpr auto digits16_prefix_1 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0x");
             constexpr auto digits16_prefix_2 = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X");
 
-            if (num_str.starts_with(digits2_prefix_1) || num_str.starts_with(digits2_prefix_2))
-                (*this) = _make_by_digits_power2_arr<2>(_make_number_array<2>(num_str));
-            else if (num_str.starts_with(digits16_prefix_1) || num_str.starts_with(digits16_prefix_2))
-                (*this) = _make_by_digits_power2_arr<16>(_make_number_array<16>(num_str));
-            else if (num_str.starts_with(digits8_prefix_1))
-                (*this) = _make_by_digits_power2_arr<8>(_make_number_array<8>(num_str));
-            else
-                (*this) = _make_by_digits10_arr(_make_number_array<10>(num_str));
+            if (num_str.starts_with(digits2_prefix_1) || num_str.starts_with(digits2_prefix_2)) {
+                constexpr auto arr_size = calc_integral_digits_from_bitwidth<2>(max_digits2);
+                (*this) = _make_by_digits_power2_arr<2>(convert_str_to_number_array<arr_size>(num_str, 2));
+            }
+            else if (num_str.starts_with(digits16_prefix_1) || num_str.starts_with(digits16_prefix_2)) {
+                constexpr auto arr_size = calc_integral_digits_from_bitwidth<16>(max_digits2);
+                (*this) = _make_by_digits_power2_arr<16>(convert_str_to_number_array<arr_size>(num_str, 16));
+            }
+            else if (num_str.starts_with(digits8_prefix_1)) {
+                constexpr auto arr_size = calc_integral_digits_from_bitwidth<8>(max_digits2);
+                (*this) = _make_by_digits_power2_arr<8>(convert_str_to_number_array<arr_size>(num_str, 8));
+            }
+            else {
+                constexpr auto arr_size = calc_integral_digits_from_bitwidth<10>(max_digits2);
+                (*this) = _make_by_digits10_arr(convert_str_to_number_array<arr_size>(num_str, 10));
+            }
         }
 
         // -------------------------------------------
@@ -598,105 +606,6 @@ namespace tunum
                 for (; i <= max_digits10; i++)
                     table[i] = unsigned_t{table[i - 1]} * 10;
             return table;
-        }
-
-        // 文字を数値へ変換
-        template <class CharT>
-        static constexpr auto _char_to_num(CharT v)
-        {
-            using traits_t = std::char_traits<CharT>;
-            constexpr CharT code_zero = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "0")[0];
-            constexpr CharT code_a = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "a")[0];
-            constexpr CharT code_A = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "A")[0];
-
-            if (v >= code_zero && v < code_zero + 10)
-                return int(v - code_zero);
-            if (v >= code_a && v < code_a + 6)
-                return int(v - code_a + 10);
-            return int(v - code_A + 10);
-        }
-
-        // 進数リテラルの接頭詞を返却
-        template <std::size_t Base, class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr auto _get_literal_prefixes()
-        {
-            if constexpr (Base == 2)
-                return std::array{
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0b"),
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0B")
-                };
-            else if constexpr (Base == 8)
-                return std::array{
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0")
-                };
-            else if constexpr (Base == 16)
-                return std::array{
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0x"),
-                    TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "0X")
-                };
-            else
-                return std::array<std::basic_string_view<CharT, Traits>, 0>{};
-        }
-
-        // 接頭詞の長さ取得
-        template <std::size_t Base>
-        static constexpr auto _get_literal_prefix_length() { return (Base == 2 || Base == 16) ? 2 : 0; }
-
-        // 入力文字列が正しいか検証
-        template <std::size_t Base, class CharT, class Traits = std::char_traits<CharT>>
-        static constexpr bool _valid_input_number_string(std::basic_string_view<CharT, Traits> num_str)
-        {
-            // 接頭詞を除外した部分の検証
-            constexpr auto valid_without_prefix = [](std::basic_string_view<CharT, Traits> _num_str) -> bool {
-                constexpr auto double_s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "''");
-                constexpr auto npos = std::basic_string_view<CharT, Traits>::npos;
-
-                // シングルクオテーションから開始する文字列はNG
-                if (_num_str.starts_with(double_s_quote[0]))
-                    return false;
-                // シングルクオテーションが連続して2回以上出現したらNG
-                if (_num_str.find(double_s_quote) != npos)
-                    return false;
-                // 想定外の文字が入力されていないか検査
-                for (CharT ch : _num_str)
-                    if (ch != double_s_quote[0])
-                        if (auto num = _char_to_num(ch); num < 0 || Base <= num)
-                            return false;
-                return true;
-            };
-
-            if constexpr (Base == 2 || Base == 16) {
-                // 接頭詞検査のち除去部分の検査
-                for (auto pref : _get_literal_prefixes<Base, CharT, Traits>())
-                    if (num_str.starts_with(pref))
-                        return valid_without_prefix(num_str.substr(_get_literal_prefix_length<Base>()));
-            }
-            else
-                return valid_without_prefix(num_str);
-            return false;
-        }
-
-        // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
-        template <
-            std::size_t Base,
-            class CharT,
-            class Traits = std::char_traits<CharT>,
-            std::size_t ArrSize = calc_integral_digits_from_bitwidth<Base>(max_digits2)
-        >
-        static constexpr std::array<int, ArrSize + 1> _make_number_array(std::basic_string_view<CharT, Traits> num_str)
-        {
-            if (!_valid_input_number_string<Base, CharT, Traits>(num_str))
-                throw std::invalid_argument("Specified not number string.");
-
-            num_str = num_str.substr(_get_literal_prefix_length<Base>());
-            constexpr CharT s_quote = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, Traits, "'")[0];
-            std::array<int, ArrSize + 1> number_array = {};
-            // ranges の reverse_view による反転は clang で怒られたため、
-            // インデックス操作で読み取り順序を反転させる
-            for (int i = 0, ch_i = num_str.length() - 1; ch_i >= 0 && i <= ArrSize; ch_i--)
-                if (const auto ch = num_str[ch_i]; ch != s_quote)
-                    number_array[i++] = _char_to_num(ch);
-            return number_array;
         }
 
         // 10進数文字列からオブジェクト生成
