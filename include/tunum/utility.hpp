@@ -48,6 +48,7 @@ namespace tunum
     }
 
     // 進数変換結果の桁数を計算
+    // TODO: 多倍長浮動小数点型によりぴったりの桁数を出せるか考慮。基本的に割り算が重いため、コンパイル時には使い物にならない気もするが
     // @param from_base 変換前の進数
     // @param to_base 変換後の進数
     // @param from_numbers 変換前の数値列
@@ -63,7 +64,7 @@ namespace tunum
         if (from_base == to_base)
             return len;
 
-        double max_v{}, cur_v{}, r = 1. / from_base;
+        double max_v{}, cur_v{}, r = 1.;
         for (std::size_t i = 0; i < len; i++) {
             max_v += double(from_base - 1) * r;
             cur_v += double(numbers[i]) * r;

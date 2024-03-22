@@ -18,17 +18,19 @@ namespace tunum::literals
             constexpr char s[] = { IntegralLiteral..., '\0' };
             constexpr std::size_t count_num = ::tunum::count_number_digits(s);
             constexpr std::size_t base_number = ::tunum::get_base_number(s);
-
-            constexpr auto byte_size = ::tunum::alignment(
-                ::tunum::calc_integral_storable_byte<base_number>(count_num) * 8,
-                min_fmpint::base_data_digits2
-            ) * min_fmpint::base_data_digits2 / 8;
-
-            using fmpint_t = fmpint<byte_size, Signed>;
             static_assert(
                 ::tunum::validate_input_number_string(s, base_number),
                 "Invalid integer literal."
             );
+
+            constexpr auto num_arr = ::tunum::convert_str_to_number_array<count_num>(s, base_number);
+            constexpr auto byte_size = ::tunum::alignment(
+                ::tunum::calc_base_number_digits(base_number, 2, num_arr),
+                min_fmpint::base_data_digits2
+            ) * min_fmpint::base_data_digits2 / 8;
+            static_assert(byte_size);
+
+            using fmpint_t = fmpint<byte_size, Signed>;
             return fmpint_t{s};
         }
     }

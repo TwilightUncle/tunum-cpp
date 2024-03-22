@@ -404,7 +404,7 @@ TEST(TunumFmpintTest, StringConstructorTest)
     EXPECT_EQ(fmp_int_v3, fmp_int_v4);
     constexpr auto fmp_int_v5 = 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_fmp;
     constexpr auto fmp_int_v6 = 0b000000001111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_ufmp;
-    EXPECT_EQ(fmp_int_v5, -1);
+    EXPECT_EQ(fmp_int_v5, ~std::uint64_t{}); // doubleでは扱えない桁数のため、内部的な実装で、ぴったり上限の場合に大きめのサイズとなる
     EXPECT_EQ(fmp_int_v6, ~std::uint64_t{});
     constexpr auto fmp_int_v7 = 0377'77777777'77777777'77777777'77777777'77777777_fmp;
     constexpr auto fmp_int_v8 = 00000377'77777777'77777777'77777777'77777777'77777777_ufmp;
