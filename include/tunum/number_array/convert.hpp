@@ -179,7 +179,7 @@ namespace tunum
         class CharT,
         class Traits = std::char_traits<CharT>
     >
-    static constexpr std::array<int, ArrSize + 1> convert_str_to_number_array(
+    inline constexpr std::array<int, ArrSize + 1> convert_str_to_number_array(
         std::basic_string_view<CharT, Traits> num_str,
         std::size_t base_number
     ) {
@@ -197,6 +197,15 @@ namespace tunum
                 number_array[i++] = convert_char_to_num(ch);
         return number_array;
     }
+
+    // シングルクオテーションを除去、文字列の並び反転の上、数値配列に変換
+    // @tparam ArrSize 結果配列サイズ
+    // @tparam CharT 文字型
+    // @param num_str 対象の数値文字列
+    // @param base_number 進数
+    template <std::size_t ArrSize, class CharT>
+    inline constexpr auto convert_str_to_number_array(const CharT* num_str, std::size_t base_number)
+    { return convert_str_to_number_array<ArrSize>(std::basic_string_view<CharT>{num_str}, base_number); }
 }
 
 #endif

@@ -46,8 +46,8 @@ namespace tunum
 
         static constexpr bool is_min_size = std::same_as<base_data_t, half_fmpint>;
 
-        half_fmpint upper = {};
         half_fmpint lower = {};
+        half_fmpint upper = {};
 
         // -------------------------------------------
         // コンストラクタ
@@ -543,8 +543,8 @@ namespace tunum
             return r += (r2 <<= (size * 8 / 2));
         }
 
-        // 割り算の商と余りの2要素配列を返却
-        // v1 と v2の差が大きいほど計算量も増える
+        // 除算
+        // v1 と v2の差が大きく、両端の連続した0が少ない値ほど計算量も増える
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
             // 重いので計算せずとも自明なものはここではじいておく
@@ -569,7 +569,6 @@ namespace tunum
                         (fmpint{v1} >>= min_zero_r_cnt).lower,
                         (fmpint{v2} >>= min_zero_r_cnt).lower
                     );
-                    // 余りは桁を削ってはいけないので戻す
                     return fmpint{_quo};
                 }
 
