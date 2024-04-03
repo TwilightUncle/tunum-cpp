@@ -306,13 +306,14 @@ namespace tunum
         // -------------------------------------------
 
         // ビット左ローテーション
-        constexpr auto rotate_l(std::size_t n) const noexcept
+        constexpr fmpint rotate_l(int s) const noexcept
         {
             auto this_clone = fmpint{*this};
-            if (!n) return this_clone;
+            if (!s) return this_clone;
+            if (s < 0) return this->rotate_r(-s);
 
-            const auto shift_mod = n % base_data_digits2;
-            const auto i_diff = n / base_data_digits2;
+            const auto shift_mod = s % base_data_digits2;
+            const auto i_diff = s / base_data_digits2;
             const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
 
             for (std::size_t i = 0; i < data_length; i++) {
@@ -325,7 +326,13 @@ namespace tunum
         }
 
         // ビット右ローテーション
-        constexpr auto rotate_r(std::size_t n) const noexcept { return this->rotate_l(max_digits2 - (n % max_digits2)); }
+        constexpr fmpint rotate_r(int s) const noexcept
+        {
+            const int l_s = s < 0
+                ? -s
+                : max_digits2 - (s % max_digits2);
+            return this->rotate_l(l_s);
+        }
 
         // 左側に連続している 0 ビットの数を返却
         constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(false, true); }
