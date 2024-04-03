@@ -70,6 +70,11 @@ namespace tunum
             cur_v += double(numbers[i]) * r;
             r /= from_base;
         }
+
+        // 数値列の値が0の場合は自明
+        if (cur_v == 0)
+            return 1;
+
         const double value_rate = ::tunum::log(max_v, cur_v);
         const double digits_rate = ::tunum::log(to_base, from_base);
         return ::tunum::ceil((value_rate + len - 1) * digits_rate);
