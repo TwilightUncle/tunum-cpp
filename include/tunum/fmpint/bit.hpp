@@ -9,6 +9,76 @@
 
 namespace tunum
 {
+    // 左循環シフト
+    template <TuUnsigned T>
+    [[nodiscard]] constexpr T rotl(const T& x, int s) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::rotl<T>(x, s);
+        else
+            return x.rotate_l(s);
+    }
+
+    // 右循環シフト
+    template <TuUnsigned T>
+    [[nodiscard]] constexpr T rotr(const T& x, int s) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::rotr<T>(x, s);
+        else
+            return x.rotate_r(s);
+    }
+
+    // 左から連続した0のビットを数える
+    template <TuUnsigned T>
+    constexpr int countl_zero(const T& x) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::countl_zero<T>(x);
+        else
+            return x.countl_zero_bit();
+    }
+
+    // 右から連続した-のビットを数える
+    template <TuUnsigned T>
+    constexpr int countr_zero(const T& x) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::countr_zero<T>(x);
+        else
+            return x.countr_zero_bit();
+    }
+
+    // 左から連続した1のビットを数える
+    template <TuUnsigned T>
+    constexpr int countl_one(const T& x) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::countl_one<T>(x);
+        else
+            return x.countl_one_bit();
+    }
+
+    // 右から連続した1のビットを数える
+    template <TuUnsigned T>
+    constexpr int countr_one(const T& x) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::countr_one<T>(x);
+        else
+            return x.countr_one_bit();
+    }
+
+    // 立っているビット数をカウント
+    template <TuUnsigned T>
+    constexpr int popcount(const T& x) noexcept
+    {
+        if constexpr (std::unsigned_integral<T>)
+            return std::popcount<T>(x);
+        else
+            return x.count_one_bit();
+    }
+
     // 一つだけbitが立っているか判定
     template <TuUnsigned T>
     constexpr bool has_single_bit(const T& x) noexcept
@@ -33,7 +103,7 @@ namespace tunum
     template <TuUnsigned T>
     constexpr T bit_ceil(const T& x)
     {
-        if (has_single_bit(x))
+        if (tunum::has_single_bit(x))
             return x;
         if constexpr (std::unsigned_integral<T>)
             return std::bit_ceil<T>(x);
@@ -48,7 +118,7 @@ namespace tunum
     template <TuUnsigned T>
     constexpr T bit_floor(const T& x)
     {
-        if (has_single_bit(x))
+        if (tunum::has_single_bit(x))
             return x;
         if constexpr (std::unsigned_integral<T>)
             return std::bit_floor<T>(x);
