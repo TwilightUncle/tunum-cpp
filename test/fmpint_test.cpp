@@ -11,6 +11,22 @@ constexpr auto bit32_3 = std::uint32_t{};
 constexpr auto bit32_4 = ~std::uint32_t{};
 constexpr auto bit64_lit_1 = 0b0000'1111'1111'1111'1111'0000'0000'1111'0000'1111'1111'1111'0000'0000'0000'0000u;
 
+TEST(TunumFmpintTest, MetaFunctionTest)
+{
+    constexpr auto case1 = std::is_same_v<tunum::get_int_t<0>, std::int8_t>;
+    constexpr auto case2 = std::is_same_v<tunum::get_uint_t<2>, std::uint16_t>;
+    constexpr auto case3 = std::is_same_v<tunum::get_int_t<4>, std::int32_t>;
+    constexpr auto case4 = std::is_same_v<tunum::get_uint_t<5>, std::uint64_t>;
+    constexpr auto case5 = std::is_same_v<tunum::get_int_t<9>, tunum::int128_t>;
+    constexpr auto case6 = std::is_same_v<tunum::get_uint_t<32>, tunum::uint256_t>;
+    ASSERT_TRUE(case1);
+    ASSERT_TRUE(case2);
+    ASSERT_TRUE(case3);
+    ASSERT_TRUE(case4);
+    ASSERT_TRUE(case5);
+    ASSERT_TRUE(case6);
+}
+
 TEST(TunumFmpintTest, ConstructorTest)
 {
     ASSERT_EQ(tunum::uint128_t::size, uint128_t_2::size);

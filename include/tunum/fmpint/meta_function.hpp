@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_META_FUNCTION_HPP
 
 #include <concepts>
+#include <bit>
 
 namespace tunum
 {
@@ -70,6 +71,44 @@ namespace tunum
     // 制約 TuIntegral が真となる二つの型のうち、大きいほうと同じサイズの fmpint を返却
     template <TuIntegral T1, TuIntegral T2, TuIntegral T1_or_T2>
     using get_large_integral_t = typename get_large_integral<T1, T2, T1_or_T2>::type;
+
+    // 任意サイズの符号あり整数型を取得
+    // 2の累乗以外のByteSizeは直上の2累乗値に引き上げられる
+    template <std::size_t ByteSize>
+    struct get_int : public get_int<std::bit_ceil(ByteSize)> {};
+    template <> struct get_int<(1 << 0)> : public std::type_identity<std::int8_t> {};
+    template <> struct get_int<(1 << 1)> : public std::type_identity<std::int16_t> {};
+    template <> struct get_int<(1 << 2)> : public std::type_identity<std::int32_t> {};
+    template <> struct get_int<(1 << 3)> : public std::type_identity<std::int64_t> {};
+    template <std::size_t ByteSize>
+    requires ((1 << 3) < ByteSize)
+    struct get_int<ByteSize> : public std::type_identity<
+        fmpint<std::bit_ceil(ByteSize), true>
+    > {};
+
+    // 任意サイズの符号あり整数型を取得
+    // 2の累乗以外のByteSizeは直上の2累乗値に引き上げられる
+    template <std::size_t ByteSize>
+    using get_int_t = typename get_int<ByteSize>::type;
+
+    // 任意サイズの符号なし整数型を取得
+    // 2の累乗以外のByteSizeは直上の2累乗値に引き上げられる
+    template <std::size_t ByteSize>
+    struct get_uint : public get_uint<std::bit_ceil(ByteSize)> {};
+    template <> struct get_uint<(1 << 0)> : public std::type_identity<std::uint8_t> {};
+    template <> struct get_uint<(1 << 1)> : public std::type_identity<std::uint16_t> {};
+    template <> struct get_uint<(1 << 2)> : public std::type_identity<std::uint32_t> {};
+    template <> struct get_uint<(1 << 3)> : public std::type_identity<std::uint64_t> {};
+    template <std::size_t ByteSize>
+    requires ((1 << 3) < ByteSize)
+    struct get_uint<ByteSize> : public std::type_identity<
+        fmpint<std::bit_ceil(ByteSize), false>
+    > {};
+
+    // 任意サイズの符号なし整数型を取得
+    // 2の累乗以外のByteSizeは直上の2累乗値に引き上げられる
+    template <std::size_t ByteSize>
+    using get_uint_t = typename get_uint<ByteSize>::type;
 }
 
 #endif
