@@ -5,7 +5,6 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include <bit>
 #include <string_view>
 
 #include TUNUM_COMMON_INCLUDE(math.hpp)
@@ -26,15 +25,6 @@
 
 namespace tunum
 {
-    // 整数の配列やコンテナ(添え字アクセスが可能なこと)
-    template <class T>
-    concept TuAnyBaseNumbers = requires (T& v) {
-        { std::size(v) } -> std::convertible_to<std::size_t>;
-        { v[std::declval<std::size_t>()] } -> std::convertible_to<int>;
-        { *std::begin(v) } -> std::convertible_to<int>;
-        std::end(v);
-    };
-
     // 数値配列の内容を検証  
     // @param base 入力した数値列の進数
     // @param numbers 検査対象の数値列

@@ -1,7 +1,7 @@
 #ifndef TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 
-#include TUNUM_COMMON_INCLUDE(fmpint/meta_function.hpp)
+#include TUNUM_COMMON_INCLUDE(concepts.hpp)
 #include TUNUM_COMMON_INCLUDE(number_array.hpp)
 
 #include <array>

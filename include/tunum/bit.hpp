@@ -9,167 +9,151 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include <bit>
-#include <concepts>
+#include TUNUM_COMMON_INCLUDE(concepts.hpp)
+
+namespace tunum::impl
+{
+    using std::rotl;
+    template <std::size_t N>
+    constexpr fmpint<N, false> rotl(const fmpint<N, false>& x, int s) noexcept
+    { return x.rotate_l(s); }
+
+    using std::rotr;
+    template <std::size_t N>
+    constexpr fmpint<N, false> rotr(const fmpint<N, false>& x, int s) noexcept
+    { return x.rotate_r(s); }
+
+    using std::countl_zero;
+    template <std::size_t N>
+    constexpr int countl_zero(const fmpint<N, false>& x) noexcept
+    { return x.countl_zero_bit(); }
+
+    using std::countr_zero;
+    template <std::size_t N>
+    constexpr int countr_zero(const fmpint<N, false>& x) noexcept
+    { return x.countr_zero_bit(); }
+
+    using std::countl_one;
+    template <std::size_t N>
+    constexpr int countl_one(const fmpint<N, false>& x) noexcept
+    { return x.countl_one_bit(); }
+
+    using std::countr_one;
+    template <std::size_t N>
+    constexpr int countr_one(const fmpint<N, false>& x) noexcept
+    { return x.countr_one_bit(); }
+
+    using std::popcount;
+    template <std::size_t N>
+    constexpr int popcount(const fmpint<N, false>& x) noexcept
+    { return x.count_one_bit(); }
+
+    using std::has_single_bit;
+    template <std::size_t N>
+    constexpr bool has_single_bit(const fmpint<N, false>& x) noexcept
+    { return x.count_one_bit() == 1; }
+
+    using std::bit_width;
+    template <std::size_t N>
+    constexpr int bit_width(const fmpint<N, false>& x) noexcept
+    { return x.get_bit_width(); }
+
+    using std::bit_ceil;
+    template <std::size_t N>
+    constexpr fmpint<N, false> bit_ceil(const fmpint<N, false>& x) noexcept
+    {
+        if (has_single_bit(x))
+            return x;
+        fmpint<N, false> v{};
+        v.set_bit(bit_width(x), true);
+        return v;
+    }
+
+    using std::bit_floor;
+    template <std::size_t N>
+    constexpr fmpint<N, false> bit_floor(const fmpint<N, false>& x) noexcept
+    {
+        if (has_single_bit(x))
+            return x;
+        fmpint<N, false> v{};
+        if (x > 0)
+            v.set_bit(bit_width(x) - 1, true);
+        return v;
+    }
+
+    struct rotl_cpo
+    {
+        template <TuBitwiseOperable T>
+        [[nodiscard]] constexpr T operator()(const T& x, int s) const noexcept
+        { return rotl(x, s); } 
+    };
+
+    struct rotr_cpo
+    {
+        template <TuBitwiseOperable T>
+        [[nodiscard]] constexpr T operator()(const T& x, int s) const noexcept
+        { return rotr(x, s); } 
+    };
+
+    struct countl_zero_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return countl_zero(x); } 
+    };
+
+    struct countr_zero_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return countr_zero(x); } 
+    };
+
+    struct countl_one_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return countl_one(x); } 
+    };
+
+    struct countr_one_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return countr_one(x); } 
+    };
+
+    struct popcount_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return popcount(x); } 
+    };
+
+    struct has_single_bit_cpo
+    {
+        constexpr bool operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return has_single_bit(x); } 
+    };
+
+    struct bit_width_cpo
+    {
+        constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
+        { return bit_width(x); } 
+    };
+
+    struct bit_ceil_cpo
+    {
+        template <TuBitwiseOperable T>
+        constexpr T operator()(const T& x) const noexcept
+        { return bit_ceil(x); } 
+    };
+
+    struct bit_floor_cpo
+    {
+        template <TuBitwiseOperable T>
+        constexpr T operator()(const T& x) const noexcept
+        { return bit_floor(x); } 
+    };
+}
 
 namespace tunum
 {
-    // 前方宣言
-    template <std::size_t Bytes, bool Signed>
-    struct fmpint;
-
-    // bit演算可能なことの制約
-    template <class T>
-    concept TuBitwiseOperable = requires (T& v) {
-        { v >> std::declval<int>() } -> std::convertible_to<T>;
-        { v << std::declval<int>() } -> std::convertible_to<T>;
-        { ~v } -> std::convertible_to<T>;
-        { v & std::declval<T>() } -> std::convertible_to<T>;
-        { v | std::declval<T>() } -> std::convertible_to<T>;
-        { v ^ std::declval<T>() } -> std::convertible_to<T>;
-    };
-
-    namespace impl
-    {
-        using std::rotl;
-        template <std::size_t N>
-        constexpr fmpint<N, false> rotl(const fmpint<N, false>& x, int s) noexcept
-        { return x.rotate_l(s); }
-
-        using std::rotr;
-        template <std::size_t N>
-        constexpr fmpint<N, false> rotr(const fmpint<N, false>& x, int s) noexcept
-        { return x.rotate_r(s); }
-
-        using std::countl_zero;
-        template <std::size_t N>
-        constexpr int countl_zero(const fmpint<N, false>& x) noexcept
-        { return x.countl_zero_bit(); }
-
-        using std::countr_zero;
-        template <std::size_t N>
-        constexpr int countr_zero(const fmpint<N, false>& x) noexcept
-        { return x.countr_zero_bit(); }
-
-        using std::countl_one;
-        template <std::size_t N>
-        constexpr int countl_one(const fmpint<N, false>& x) noexcept
-        { return x.countl_one_bit(); }
-
-        using std::countr_one;
-        template <std::size_t N>
-        constexpr int countr_one(const fmpint<N, false>& x) noexcept
-        { return x.countr_one_bit(); }
-
-        using std::popcount;
-        template <std::size_t N>
-        constexpr int popcount(const fmpint<N, false>& x) noexcept
-        { return x.count_one_bit(); }
-
-        using std::has_single_bit;
-        template <std::size_t N>
-        constexpr bool has_single_bit(const fmpint<N, false>& x) noexcept
-        { return x.count_one_bit() == 1; }
-
-        using std::bit_width;
-        template <std::size_t N>
-        constexpr int bit_width(const fmpint<N, false>& x) noexcept
-        { return x.get_bit_width(); }
-
-        using std::bit_ceil;
-        template <std::size_t N>
-        constexpr fmpint<N, false> bit_ceil(const fmpint<N, false>& x) noexcept
-        {
-            if (has_single_bit(x))
-                return x;
-            fmpint<N, false> v{};
-            v.set_bit(bit_width(x), true);
-            return v;
-        }
-
-        using std::bit_floor;
-        template <std::size_t N>
-        constexpr fmpint<N, false> bit_floor(const fmpint<N, false>& x) noexcept
-        {
-            if (has_single_bit(x))
-                return x;
-            fmpint<N, false> v{};
-            if (x > 0)
-                v.set_bit(bit_width(x) - 1, true);
-            return v;
-        }
-
-        struct rotl_cpo
-        {
-            template <TuBitwiseOperable T>
-            [[nodiscard]] constexpr T operator()(const T& x, int s) const noexcept
-            { return rotl(x, s); } 
-        };
-
-        struct rotr_cpo
-        {
-            template <TuBitwiseOperable T>
-            [[nodiscard]] constexpr T operator()(const T& x, int s) const noexcept
-            { return rotr(x, s); } 
-        };
-
-        struct countl_zero_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return countl_zero(x); } 
-        };
-
-        struct countr_zero_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return countr_zero(x); } 
-        };
-
-        struct countl_one_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return countl_one(x); } 
-        };
-
-        struct countr_one_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return countr_one(x); } 
-        };
-
-        struct popcount_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return popcount(x); } 
-        };
-
-        struct has_single_bit_cpo
-        {
-            constexpr bool operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return has_single_bit(x); } 
-        };
-
-        struct bit_width_cpo
-        {
-            constexpr int operator()(const TuBitwiseOperable auto& x) const noexcept
-            { return bit_width(x); } 
-        };
-
-        struct bit_ceil_cpo
-        {
-            template <TuBitwiseOperable T>
-            constexpr T operator()(const T& x) const noexcept
-            { return bit_ceil(x); } 
-        };
-
-        struct bit_floor_cpo
-        {
-            template <TuBitwiseOperable T>
-            constexpr T operator()(const T& x) const noexcept
-            { return bit_floor(x); } 
-        };
-    }
-
     // 左循環シフト
     inline constexpr impl::rotl_cpo rotl{};
 

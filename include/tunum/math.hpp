@@ -5,31 +5,13 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include <concepts>
+#include TUNUM_COMMON_INCLUDE(concepts.hpp)
+
 #include <numbers>
 #include <stdexcept>
 
 namespace tunum
 {
-    // 算術型か、整数値と下記の操作ができる型
-    // - 全順序比較
-    // - 四則演算
-    // - 単項 マイナス
-    template <class T>
-    concept TuArithmetic
-        = std::is_arithmetic_v<T>
-        || requires (T v) {
-            { -v } -> std::convertible_to<T>;
-            { v + std::declval<T>() } -> std::convertible_to<T>;
-            { v - std::declval<T>() } -> std::convertible_to<T>;
-            { v * std::declval<T>() } -> std::convertible_to<T>;
-            { v / std::declval<T>() } -> std::convertible_to<T>;
-        }
-        && std::totally_ordered<T>
-        && std::totally_ordered_with<T, int>
-        && std::convertible_to<T, int>
-        && std::convertible_to<int, T>;
-
     // 絶対値取得
     inline constexpr auto abs(const TuArithmetic auto& v) { return (std::max)(v, -v); }
 
