@@ -14,68 +14,61 @@
 namespace tunum::impl
 {
     using std::rotl;
-    template <std::size_t N>
-    constexpr fmpint<N, false> rotl(const fmpint<N, false>& x, int s) noexcept
+    template <TuFmpUnsigned T>
+    constexpr T rotl(const T& x, int s) noexcept
     { return x.rotate_l(s); }
 
     using std::rotr;
-    template <std::size_t N>
-    constexpr fmpint<N, false> rotr(const fmpint<N, false>& x, int s) noexcept
+    template <TuFmpUnsigned T>
+    constexpr T rotr(const T& x, int s) noexcept
     { return x.rotate_r(s); }
 
     using std::countl_zero;
-    template <std::size_t N>
-    constexpr int countl_zero(const fmpint<N, false>& x) noexcept
+    constexpr int countl_zero(const TuFmpUnsigned auto& x) noexcept
     { return x.countl_zero_bit(); }
 
     using std::countr_zero;
-    template <std::size_t N>
-    constexpr int countr_zero(const fmpint<N, false>& x) noexcept
+    constexpr int countr_zero(const TuFmpUnsigned auto& x) noexcept
     { return x.countr_zero_bit(); }
 
     using std::countl_one;
-    template <std::size_t N>
-    constexpr int countl_one(const fmpint<N, false>& x) noexcept
+    constexpr int countl_one(const TuFmpUnsigned auto& x) noexcept
     { return x.countl_one_bit(); }
 
     using std::countr_one;
-    template <std::size_t N>
-    constexpr int countr_one(const fmpint<N, false>& x) noexcept
+    constexpr int countr_one(const TuFmpUnsigned auto& x) noexcept
     { return x.countr_one_bit(); }
 
     using std::popcount;
-    template <std::size_t N>
-    constexpr int popcount(const fmpint<N, false>& x) noexcept
+    constexpr int popcount(const TuFmpUnsigned auto& x) noexcept
     { return x.count_one_bit(); }
 
     using std::has_single_bit;
-    template <std::size_t N>
-    constexpr bool has_single_bit(const fmpint<N, false>& x) noexcept
+    constexpr bool has_single_bit(const TuFmpUnsigned auto& x) noexcept
     { return x.count_one_bit() == 1; }
 
     using std::bit_width;
-    template <std::size_t N>
-    constexpr int bit_width(const fmpint<N, false>& x) noexcept
+    constexpr int bit_width(const TuFmpUnsigned auto& x) noexcept
     { return x.get_bit_width(); }
 
     using std::bit_ceil;
-    template <std::size_t N>
-    constexpr fmpint<N, false> bit_ceil(const fmpint<N, false>& x) noexcept
+    template <TuFmpUnsigned T>
+    constexpr T bit_ceil(const T& x) noexcept
     {
         if (has_single_bit(x))
             return x;
-        fmpint<N, false> v{};
+        T v{};
         v.set_bit(bit_width(x), true);
         return v;
     }
 
     using std::bit_floor;
-    template <std::size_t N>
-    constexpr fmpint<N, false> bit_floor(const fmpint<N, false>& x) noexcept
+    template <TuFmpUnsigned T>
+    constexpr T bit_floor(const T& x) noexcept
     {
         if (has_single_bit(x))
             return x;
-        fmpint<N, false> v{};
+        T v{};
         if (x > 0)
             v.set_bit(bit_width(x) - 1, true);
         return v;
