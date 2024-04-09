@@ -499,3 +499,11 @@ TEST(TunumFmpintTest, BitTest)
     EXPECT_EQ(case23, 0b0000'0000'1000'0000'0000'0000'0000'0000'0000'0000_ufmp);
     EXPECT_EQ(case24, 0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
 }
+
+TEST(TunumFmpintTest, MemoryLayoutTest)
+{
+    // 要するにbit_castで処理が壊れないかのテスト
+    constexpr auto integral_value_1 = 0xFFFFFFFD'FFFFFFFE;
+    constexpr auto integral_value_2 = std::bit_cast<uint64_t_2, std::uint64_t>(integral_value_1);
+    EXPECT_EQ(integral_value_1, integral_value_2);
+}
