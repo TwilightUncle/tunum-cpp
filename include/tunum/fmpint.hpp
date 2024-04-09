@@ -8,6 +8,5 @@
 #include TUNUM_COMMON_INCLUDE(fmpint/operator.hpp)
 #include TUNUM_COMMON_INCLUDE(fmpint/alias.hpp)
 #include TUNUM_COMMON_INCLUDE(fmpint/literals.hpp)
-#include TUNUM_COMMON_INCLUDE(fmpint/bit.hpp)
 
 #endif

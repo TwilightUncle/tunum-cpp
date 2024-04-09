@@ -445,61 +445,6 @@ TEST(TunumFmpintTest, StringConstructorTest)
     EXPECT_THROW(tunum::uint128_t{"0X12''345"}, std::invalid_argument);
 }
 
-TEST(TunumFmpintTest, BitTest)
-{
-    constexpr auto case1 = tunum::has_single_bit(0b0000'0000'1001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    constexpr auto case2 = tunum::has_single_bit(0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    constexpr auto case3 = tunum::has_single_bit(0_ufmp);
-    constexpr auto case4 = tunum::has_single_bit(1u);
-    constexpr auto case5 = tunum::has_single_bit(16u);
-    constexpr auto case6 = tunum::has_single_bit(5u);
-    EXPECT_FALSE(case1);
-    EXPECT_TRUE(case2);
-    EXPECT_FALSE(case3);
-    EXPECT_TRUE(case4);
-    EXPECT_TRUE(case5);
-    EXPECT_FALSE(case6);
-
-    constexpr auto case7 = tunum::bit_width(0u);
-    constexpr auto case8 = tunum::bit_width(128u);
-    constexpr auto case9 = tunum::bit_width(127u);
-    constexpr auto case10 = tunum::bit_width(0_ufmp);
-    constexpr auto case11 = tunum::bit_width(0b0000'0000'1001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    constexpr auto case12 = tunum::bit_width(0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    EXPECT_EQ(case7, 0u);
-    EXPECT_EQ(case8, 8u);
-    EXPECT_EQ(case9, 7u);
-    EXPECT_EQ(case10, 0u);
-    EXPECT_EQ(case11, 32);
-    EXPECT_EQ(case12, 29);
-
-    constexpr auto case13 = tunum::bit_ceil(0u);
-    constexpr auto case14 = tunum::bit_ceil(128u);
-    constexpr auto case15 = tunum::bit_ceil(127u);
-    constexpr auto case16 = tunum::bit_ceil(0_ufmp);
-    constexpr auto case17 = tunum::bit_ceil(0b0000'0000'1001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    constexpr auto case18 = tunum::bit_ceil(0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    EXPECT_EQ(case13, 1u);
-    EXPECT_EQ(case14, 128u);
-    EXPECT_EQ(case15, 128u);
-    EXPECT_EQ(case16, 1u);
-    EXPECT_EQ(case17, 0b0000'0001'0000'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    EXPECT_EQ(case18, 0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-
-    constexpr auto case19 = tunum::bit_floor(0u);
-    constexpr auto case20 = tunum::bit_floor(128u);
-    constexpr auto case21 = tunum::bit_floor(129u);
-    constexpr auto case22 = tunum::bit_floor(0_ufmp);
-    constexpr auto case23 = tunum::bit_floor(0b0000'0000'1001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    constexpr auto case24 = tunum::bit_floor(0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    EXPECT_EQ(case19, 0u);
-    EXPECT_EQ(case20, 128u);
-    EXPECT_EQ(case21, 128u);
-    EXPECT_EQ(case22, 0u);
-    EXPECT_EQ(case23, 0b0000'0000'1000'0000'0000'0000'0000'0000'0000'0000_ufmp);
-    EXPECT_EQ(case24, 0b0000'0000'0001'0000'0000'0000'0000'0000'0000'0000_ufmp);
-}
-
 TEST(TunumFmpintTest, MemoryLayoutTest)
 {
     // 要するにbit_castで処理が壊れないかのテスト

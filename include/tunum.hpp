@@ -6,5 +6,6 @@
 #endif
 
 #include TUNUM_COMMON_INCLUDE(fmpint.hpp)
+#include TUNUM_COMMON_INCLUDE(bit.hpp)
 
 #endif
