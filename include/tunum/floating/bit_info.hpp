@@ -98,13 +98,16 @@ namespace tunum
         }
 
         // 指数
-        constexpr exponent_value_t exponent() const noexcept
+        // 引数は仮数部を小数点表記した場合の桁数で見るかどうか
+        constexpr exponent_value_t exponent(bool is_floating_mantissa = true) const noexcept
         {
-            constexpr auto bias = max_exponent + mantissa_width;
+            const auto bias = is_floating_mantissa
+                ? max_exponent
+                : max_exponent + mantissa_width;
             if (is_unnormalized())
-                return exponent_value_t{1} - exponent_value_t{bias};
+                return exponent_value_t(1) - exponent_value_t(bias);
             if (is_normalized())
-                return exponent_value_t{exponent_bits()} - exponent_value_t{bias};
+                return exponent_value_t(exponent_bits()) - exponent_value_t(bias);
             if (is_zero())
                 return 0;
             return 1;

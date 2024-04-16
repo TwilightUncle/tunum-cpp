@@ -8,9 +8,10 @@ namespace tunum
     template <std::floating_point T, class LimitsT = std::numeric_limits<T>>
     requires (LimitsT::radix == 2 && LimitsT::is_iec559)
     struct floating_std_info
-        : public floating_bit_info<(sizeof(T) << 3), LimitsT::digits, LimitsT::max_exponent>
+        : public floating_bit_info<(sizeof(T) << 3), LimitsT::digits - 1, LimitsT::max_exponent - 1>
     {
-        using parent_t = floating_bit_info<(sizeof(T) << 3), LimitsT::digits, LimitsT::max_exponent>;
+        // numeric_limitではケチ表現の分、1桁多いためマイナス1
+        using parent_t = floating_bit_info<(sizeof(T) << 3), LimitsT::digits - 1, LimitsT::max_exponent - 1>;
         using limits_t = LimitsT;
         using data_store_t = typename parent_t::data_store_t;
 
