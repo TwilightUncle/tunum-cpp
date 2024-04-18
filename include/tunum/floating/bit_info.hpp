@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_BIT_INFO_HPP
 
 #include TUNUM_COMMON_INCLUDE(bit.hpp)
+#include TUNUM_COMMON_INCLUDE(floating/kind.hpp)
 
 namespace tunum
 {
@@ -58,19 +59,23 @@ namespace tunum
         { return data & mantissa_mask; }
 
         // --------------------------------
-        // bit表現をもとにデータの種類を判定
+        // 実装時の補助関数
         // --------------------------------
 
         // 指数部の全てのビットが立っている
         constexpr bool is_exponent_full() const noexcept
         { return (data & exponent_mask) == exponent_mask; }
 
+        // --------------------------------
+        // bit表現をもとにデータの種類を判定
+        // --------------------------------
+
         // ゼロかどうか
         constexpr bool is_zero() const noexcept
         { return !exponent_bits() && !mantissa_bits(); }
 
         // 非正規化数かどうか
-        constexpr bool is_unnormalized() const noexcept
+        constexpr bool is_denormalized() const noexcept
         { return !exponent_bits() && static_cast<bool>(mantissa_bits()); }
 
         // 正規化数かどうか
@@ -84,6 +89,20 @@ namespace tunum
         // NaNかどうか
         constexpr auto is_nan() const noexcept
         { return is_exponent_full() && static_cast<bool>(mantissa_bits()); }
+
+        // 保持している値の種類を示す列挙体返却
+        constexpr auto get_value_kind() const noexcept
+        {
+            if (is_zero())
+                return floating_value_kind::ZERO;
+            if (is_normalized())
+                return floating_value_kind::NORM;
+            if (is_denormalized())
+                return floating_value_kind::DENORM;
+            return is_infinity()
+                ? floating_value_kind::INF
+                : floating_value_kind::NAN_;
+        }
 
         // --------------------------------
         // 具体的な値を取得
@@ -104,7 +123,7 @@ namespace tunum
             const auto bias = is_floating_mantissa
                 ? max_exponent
                 : max_exponent + mantissa_width;
-            if (is_unnormalized())
+            if (is_denormalized())
                 return exponent_value_t(1) - exponent_value_t(bias);
             if (is_normalized())
                 return exponent_value_t(exponent_bits()) - exponent_value_t(bias);
@@ -119,6 +138,24 @@ namespace tunum
             if (is_normalized())
                 return mantissa_bits() | (data_store_t{1} << mantissa_width);
             return mantissa_bits();
+        }
+
+        // 少数部が存在するかどうか
+        constexpr bool has_decimal_part() const noexcept
+        {
+            // 正規化数以外は自明(あるいは未定義)として、
+            // その場で結果返却
+            // ※非正規化数は非常に小さい値のため、小数点以下を保持しているとする
+            if (!is_normalized())
+                return is_denormalized();
+
+            const auto using_mantissa_digits = std::max(
+                int(mantissa_width) - countr_zero(mantissa_bits()),
+                0
+            );
+            // 使用中のビット幅よりも指数(左シフト数)が小さいとき、
+            // 少数部が存在するものと判定
+            return exponent() < using_mantissa_digits;
         }
     };
 }
