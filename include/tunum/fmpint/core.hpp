@@ -218,30 +218,7 @@ namespace tunum
             constexpr auto is_use_sal = Signed
                 ? ((-1) >> 1) == -1
                 : ((~0u) >> 1) == (~0u);
-
-            const auto shift_mod = n % base_data_digits2;
-            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
-            const auto shift_mul = n / base_data_digits2;
-
-            if (data_length <= shift_mul)
-                return *this = fmpint{};
-            
-            *this = this->rotate_r(n);
-
-            // ローテート演算で回ってきた部分を除去
-            // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
-            const auto highest_bit = this->get_back_bit();
-            const auto fill_mask = ~base_data_t{} << shift_com;
-            const auto is_fill_one = is_use_sal && highest_bit;
-            for (std::size_t i = 0; i < shift_mul; i++)
-                (*this)[data_length - 1 - i] = base_data_t{is_fill_one} * ~base_data_t{};
-            if (fill_mask != ~base_data_t{}) {
-                if (is_fill_one)
-                    (*this)[shift_mul] ^= fill_mask;
-                else
-                    (*this)[shift_mul] &= ~fill_mask;
-            }
-            return *this;
+            return (*this) = this->shift_r(n, is_use_sal);
         }
 
         // ビット論理和代入
@@ -332,6 +309,36 @@ namespace tunum
                 ? -s
                 : max_digits2 - (s % max_digits2);
             return this->rotate_l(l_s);
+        }
+
+        // 右シフト
+        // 論理シフトと算術シフトのどちらを利用するか制御引数で制御
+        // デフォルトでは論理シフト
+        constexpr fmpint shift_r(std::size_t n, bool is_use_sal = false) const noexcept
+        {
+            const auto shift_mod = n % base_data_digits2;
+            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
+            const auto shift_mul = n / base_data_digits2;
+
+            if (data_length <= shift_mul)
+                return fmpint{};
+            
+            auto new_obj = this->rotate_r(n);
+
+            // ローテート演算で回ってきた部分を除去
+            // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
+            const auto highest_bit = new_obj.get_back_bit();
+            const auto fill_mask = ~base_data_t{} << shift_com;
+            const auto is_fill_one = is_use_sal && highest_bit;
+            for (std::size_t i = 0; i < shift_mul; i++)
+                new_obj[data_length - 1 - i] = base_data_t{is_fill_one} * ~base_data_t{};
+            if (fill_mask != ~base_data_t{}) {
+                if (is_fill_one)
+                    new_obj[data_length - 1 - shift_mul] ^= fill_mask;
+                else
+                    new_obj[data_length - 1 - shift_mul] &= ~fill_mask;
+            }
+            return new_obj;
         }
 
         // 左側に連続している 0 ビットの数を返却
