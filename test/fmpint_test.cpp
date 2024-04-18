@@ -445,6 +445,21 @@ TEST(TunumFmpintTest, StringConstructorTest)
     EXPECT_THROW(tunum::uint128_t{"0X12''345"}, std::invalid_argument);
 }
 
+TEST(TunumFmpintTest, FloatingConstructorTest)
+{
+    constexpr auto fmp_int_v1 = tunum::uint128_t{0.};
+    EXPECT_EQ(fmp_int_v1, 0);
+
+    constexpr auto fmp_int_v2 = tunum::int128_t{1.5};
+    EXPECT_EQ(fmp_int_v2, static_cast<int>(1.5));
+
+    constexpr auto fmp_int_v3 = tunum::uint128_t{float(std::uint64_t{1} << 60)};
+    EXPECT_EQ(fmp_int_v3, std::uint64_t{1} << 60);
+
+    constexpr auto fmp_int_v4 = tunum::int256_t{.3};
+    EXPECT_EQ(fmp_int_v4, int(.3));
+}
+
 TEST(TunumFmpintTest, MemoryLayoutTest)
 {
     // 要するにbit_castで処理が壊れないかのテスト

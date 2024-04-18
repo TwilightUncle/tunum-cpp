@@ -1,7 +1,7 @@
 #ifndef TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_CORE_HPP
 
-#include TUNUM_COMMON_INCLUDE(concepts.hpp)
+#include TUNUM_COMMON_INCLUDE(floating.hpp)
 #include TUNUM_COMMON_INCLUDE(number_array.hpp)
 
 #include <array>
@@ -128,6 +128,13 @@ namespace tunum
                 constexpr auto arr_size = calc_integral_digits_from_bitwidth<10>(max_digits2);
                 (*this) = _make_by_digits10_arr(convert_str_to_number_array<arr_size>(num_str, 10));
             }
+        }
+
+        // 組み込みの浮動小数点型から生成
+        constexpr fmpint(std::floating_point auto v) noexcept
+        {
+            const auto info = floating_std_info{v};
+            (*this) = _make_by_floating_info(info, v);
         }
 
         // -------------------------------------------
@@ -654,6 +661,39 @@ namespace tunum
                 for (std::size_t j = 0; j < digit_bit_width && i < max_digits2; i++, j++)
                     new_obj.set_bit(i, num & (1 << j));
             return new_obj;
+        }
+
+        // 浮動小数点型よりオブジェクト生成
+        static constexpr auto _make_by_floating_info(FloatingInfomation auto& v, TuArithmetic auto& original)
+        {
+            switch (v.get_value_kind()) {
+                case floating_value_kind::INF:
+                case floating_value_kind::NAN_:
+                    return ~fmpint{};
+                case floating_value_kind::ZERO:
+                    return fmpint{};
+                default:
+                    break;
+            }
+
+            fmpint new_obj{};
+            if (v.is_normalized() && v.exponent() >= 0) {
+                const auto shift_v = v.exponent(false);
+                new_obj = shift_v >= 0
+                    ? fmpint{v.mantissa()} <<= std::size_t(shift_v)
+                    : fmpint{v.mantissa()}.shift_r(-shift_v);
+            }
+
+            // 小数点以下の丸め方法を変換元の浮動小数点に準じるため、
+            // 一番小さい桁のみ直接キャストを試みる
+            if (v.has_decimal_part()) {
+                const auto abs_original = tunum::abs(original);
+                new_obj[0] = static_cast<base_data_t>(abs_original);
+            }
+
+            return v.sign() < 0
+                ? -new_obj
+                : new_obj;
         }
     };
 }

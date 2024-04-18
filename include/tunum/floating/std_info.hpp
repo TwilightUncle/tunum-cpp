@@ -14,6 +14,7 @@ namespace tunum
         using parent_t = floating_bit_info<(sizeof(T) << 3), LimitsT::digits - 1, LimitsT::max_exponent - 1>;
         using limits_t = LimitsT;
         using data_store_t = typename parent_t::data_store_t;
+        using exponent_value_t = typename parent_t::exponent_value_t;
 
         // ----------------------------------------------
         // コンストラクタ

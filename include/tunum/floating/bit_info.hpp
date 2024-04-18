@@ -6,6 +6,24 @@
 
 namespace tunum
 {
+    template <class T>
+    concept FloatingInfomation = requires (T& v) {
+        typename T::data_store_t;
+        typename T::exponent_value_t;
+        // { std::declval<typename T::data_store_t>() } -> TuUnsigned;
+        // { std::declval<typename T::exponent_value_t>() } -> TuIntegral;
+        { v.is_zero() } -> std::convertible_to<bool>;
+        { v.is_denormalized() } -> std::convertible_to<bool>;
+        { v.is_normalized() } -> std::convertible_to<bool>;
+        { v.is_infinity() } -> std::convertible_to<bool>;
+        { v.is_nan() } -> std::convertible_to<bool>;
+        { v.get_value_kind() } -> std::convertible_to<floating_value_kind>;
+        { v.sign() } -> std::convertible_to<int>;
+        { v.exponent() } -> std::convertible_to<typename T::exponent_value_t>;
+        { v.mantissa() } -> std::convertible_to<typename T::data_store_t>;
+        { v.has_decimal_part() } -> std::convertible_to<bool>;
+    };
+
     // 浮動小数点型の内部表現解析クラス
     // 基数が2であることを前提として解釈する
     template <std::size_t ValueBitWidth, std::size_t MantissaBitWidth, TuIntegral auto MaxExponent>
