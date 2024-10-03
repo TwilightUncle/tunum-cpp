@@ -95,6 +95,19 @@ namespace tunum
             : fmpint(v.lower)
         {}
 
+        // 2つの整数より、upperとlowerを直接セット
+        constexpr fmpint(std::integral auto u, std::integral auto l)
+            : lower(l)
+            , upper(u)
+        {}
+
+        // 2つの整数より、upperとlowerを直接セット
+        template <std::size_t N1, std::size_t N2>
+        constexpr fmpint(const fmpint<N1, Signed>& u, const fmpint<N2, Signed>& l)
+            : lower(l)
+            , upper(u)
+        {}
+
         // c言語風文字列より初期化
         template <class CharT>
         constexpr fmpint(const CharT* num_str)
@@ -534,7 +547,7 @@ namespace tunum
         // 乗算
         static constexpr auto _mul(const fmpint& v1, const fmpint& v2) noexcept
         {
-            using next_size_fmpint = fmpint<(size << 1)>;
+            using next_size_fmpint = fmpint<(size << 1), Signed>;
             constexpr auto inner_mul = [](const half_fmpint& l, const half_fmpint& r) {
                 if constexpr (is_min_size)
                     return fmpint{std::uint64_t(l) * std::uint64_t(r)};
@@ -549,19 +562,28 @@ namespace tunum
             if (is_zero_v1_l && is_zero_v1_u || is_zero_v2_l && is_zero_v2_u)
                 return next_size_fmpint{0};
 
-            // たすき掛け
-            auto r = next_size_fmpint{};
-            if (!is_zero_v1_l && !is_zero_v2_l)
-                r.lower = inner_mul(v1.lower, v2.lower);
-            if (!is_zero_v1_u && !is_zero_v2_u)
-                r.upper = inner_mul(v1.upper, v2.upper);
-            // 下の桁と上の桁をクロスする部分
-            auto r2 = next_size_fmpint{};
-            if (!is_zero_v1_u && !is_zero_v2_l)
-                r2.lower = inner_mul(v1.upper, v2.lower);
-            if (!is_zero_v1_l && !is_zero_v2_u)
-                r2 += inner_mul(v1.lower, v2.upper);
-            return r += (r2 <<= (size * 8 / 2));
+            // カラツバ法
+            const auto r1 = next_size_fmpint{
+                (!is_zero_v1_u && !is_zero_v2_u) ? fmpint{inner_mul(v1.upper, v2.upper)} : fmpint{},
+                (!is_zero_v1_l && !is_zero_v2_l) ? fmpint{inner_mul(v1.lower, v2.lower)} : fmpint{}
+            };
+
+            // たすき掛けのクロスしてる部分
+            const auto middle_1 = fmpint{v1.lower} += v1.upper;
+            const auto middle_2 = fmpint{v2.lower} += v2.upper;
+            const auto is_zero_mid_1u = !middle_1.upper;
+            const auto is_zero_mid_2u = !middle_2.upper;
+            // N / 2 + 1 桁となる場合も考慮
+            const auto r2 = next_size_fmpint{
+                    fmpint{!is_zero_mid_1u && !is_zero_mid_2u ? 1 : 0},
+                    fmpint{inner_mul(middle_1.lower, middle_2.lower)}
+                }
+                += next_size_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
+                += next_size_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
+                += -next_size_fmpint{r1.upper}
+                += -next_size_fmpint{r1.lower};
+
+            return next_size_fmpint{r1} += (next_size_fmpint{r2} <<= (size * 8 / 2));
         }
 
         // 除算

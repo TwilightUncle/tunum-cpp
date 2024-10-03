@@ -57,6 +57,7 @@ TEST(TunumFmpintTest, ConstructorTest)
     constexpr auto v8 = tunum::uint128_t{v3};    // Bytesが異なるが内部的に同じ表現の型
     constexpr auto v9 = uint128_t_2{v4};         // 小さいサイズ -> 大きいサイズ
     constexpr auto v10 = uint64_t_1{v5};         // 大きいサイズ -> 小さいサイズ
+    constexpr auto v11 = uint64_t_2{v4, v9};   // upper, lowerを直接指定
 
     ASSERT_EQ(v7.lower.lower, 1234);
     ASSERT_EQ(v7.lower.upper, 0);
@@ -66,6 +67,8 @@ TEST(TunumFmpintTest, ConstructorTest)
     ASSERT_EQ(v9.lower.upper, bit32_4);
     ASSERT_EQ(v10.lower, bit32_4);
     ASSERT_EQ(v10.upper, bit32_4);
+    ASSERT_EQ(v11.upper, -5678);
+    ASSERT_EQ(v11.lower, -5678);
 }
 
 TEST(TunumFmpintTest, ElementAccessTest)
