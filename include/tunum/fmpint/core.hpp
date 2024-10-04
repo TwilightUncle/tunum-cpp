@@ -590,6 +590,8 @@ namespace tunum
         // v1 と v2の差が大きく、両端の連続した0が少ない値ほど計算量も増える
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
+            using next_size_fmpint = fmpint<(size << 1), Signed>;
+
             // 重いので計算せずとも自明なものはここではじいておく
             if (!v2)
                 throw std::invalid_argument{"0 div."};
@@ -602,31 +604,54 @@ namespace tunum
                 // 組み込みの演算子使えるならそっち優先
                 return fmpint{std::uint64_t{v1} / std::uint64_t{v2}};
             else {
-                // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
-                // ※約数みたいなもんで、計算回数を減らす
-                if (
-                    const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
-                    max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
-                ) {
-                    const auto _quo = half_fmpint::_div(
-                        (fmpint{v1} >>= min_zero_r_cnt).lower,
-                        (fmpint{v2} >>= min_zero_r_cnt).lower
-                    );
-                    return fmpint{_quo};
+                // 逆数の精度
+                const auto target_precision = v1.get_bit_width() / v2.get_bit_width() + 2;
+                // 値が出現するより左側の0の数を保持しておく
+                // 参考: https://qiita.com/square1001/items/1aa12e04934b6e749962#3-5-%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%88%E3%83%B3%E3%83%A9%E3%83%95%E3%82%BD%E3%83%B3%E3%81%AE%E5%89%B2%E3%82%8A%E7%AE%97%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0
+                auto l_zeros = v2.get_bit_width();
+                auto precision = l_zeros;
+                // 近似値xを算出
+                auto x = fmpint{1};
+                for (; precision < target_precision; precision = l_zeros + x.get_bit_width() - 1) {
+                    const auto before_bit_len = x.get_bit_width();
+                    x = x * ((fmpint{2} << precision) - v2 * x);
+                    const auto after_bit_len = x.get_bit_width();
+                    l_zeros *= 2;
+                    l_zeros -= (after_bit_len - before_bit_len);
                 }
+                // 近似値取得(桁上り考慮のため、_mulを使用)
+                const auto detect_result = fmpint{next_size_fmpint::_mul(next_size_fmpint{v1} << precision, next_size_fmpint{x}) >> precision};
+                const auto detect_inc = detect_result + 1;
+                // 1の誤差有無判定がてら結果返却
+                return v1 >= (detect_inc * v2)
+                    ? detect_inc
+                    : detect_result;
 
-                // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
-                const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
-                auto rem = fmpint{v1};
-                auto quo = fmpint{};
-                for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
-                    const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
-                    if (rem >= shifted_v2) {
-                        quo.set_bit(v2_lshift_cnt - i, true);
-                        rem -= shifted_v2;
-                    }
-                }
-                return quo;
+                // // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
+                // // ※約数みたいなもんで、計算回数を減らす
+                // if (
+                //     const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
+                //     max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
+                // ) {
+                //     const auto _quo = half_fmpint::_div(
+                //         (fmpint{v1} >>= min_zero_r_cnt).lower,
+                //         (fmpint{v2} >>= min_zero_r_cnt).lower
+                //     );
+                //     return fmpint{_quo};
+                // }
+
+                // // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
+                // const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
+                // auto rem = fmpint{v1};
+                // auto quo = fmpint{};
+                // for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
+                //     const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
+                //     if (rem >= shifted_v2) {
+                //         quo.set_bit(v2_lshift_cnt - i, true);
+                //         rem -= shifted_v2;
+                //     }
+                // }
+                // return quo;
             }
         }
 
