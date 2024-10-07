@@ -545,9 +545,10 @@ namespace tunum
         }
 
         // 乗算
+        // TODO: FFTによる高速化
         static constexpr auto _mul(const fmpint& v1, const fmpint& v2) noexcept
         {
-            using next_size_fmpint = fmpint<(size << 1), Signed>;
+            using double_fmpint = fmpint<(size << 1), Signed>;
             constexpr auto inner_mul = [](const half_fmpint& l, const half_fmpint& r) {
                 if constexpr (is_min_size)
                     return fmpint{std::uint64_t(l) * std::uint64_t(r)};
@@ -560,10 +561,10 @@ namespace tunum
             const auto is_zero_v2_l = !v2.lower;
             const auto is_zero_v2_u = !v2.upper;
             if (is_zero_v1_l && is_zero_v1_u || is_zero_v2_l && is_zero_v2_u)
-                return next_size_fmpint{0};
+                return double_fmpint{0};
 
             // カラツバ法
-            const auto r1 = next_size_fmpint{
+            const auto r1 = double_fmpint{
                 (!is_zero_v1_u && !is_zero_v2_u) ? fmpint{inner_mul(v1.upper, v2.upper)} : fmpint{},
                 (!is_zero_v1_l && !is_zero_v2_l) ? fmpint{inner_mul(v1.lower, v2.lower)} : fmpint{}
             };
@@ -574,24 +575,22 @@ namespace tunum
             const auto is_zero_mid_1u = !middle_1.upper;
             const auto is_zero_mid_2u = !middle_2.upper;
             // N / 2 + 1 桁となる場合も考慮
-            const auto r2 = next_size_fmpint{
+            const auto r2 = double_fmpint{
                     fmpint{!is_zero_mid_1u && !is_zero_mid_2u ? 1 : 0},
                     fmpint{inner_mul(middle_1.lower, middle_2.lower)}
                 }
-                += next_size_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
-                += next_size_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
-                += -next_size_fmpint{r1.upper}
-                += -next_size_fmpint{r1.lower};
+                += double_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
+                += double_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
+                += -double_fmpint{r1.upper}
+                += -double_fmpint{r1.lower};
 
-            return next_size_fmpint{r1} += (next_size_fmpint{r2} <<= (size * 8 / 2));
+            return double_fmpint{r1} += (double_fmpint{r2} <<= (size * 8 / 2));
         }
 
         // 除算
         // v1 と v2の差が大きく、両端の連続した0が少ない値ほど計算量も増える
         static constexpr auto _div(const fmpint& v1, const fmpint& v2)
         {
-            using next_size_fmpint = fmpint<(size << 1), Signed>;
-
             // 重いので計算せずとも自明なものはここではじいておく
             if (!v2)
                 throw std::invalid_argument{"0 div."};
@@ -604,31 +603,7 @@ namespace tunum
                 // 組み込みの演算子使えるならそっち優先
                 return fmpint{std::uint64_t{v1} / std::uint64_t{v2}};
             else {
-                // 逆数の精度
-                const auto target_precision = v1.get_bit_width() / v2.get_bit_width() + 2;
-                // 値が出現するより左側の0の数を保持しておく
-                // 参考: https://qiita.com/square1001/items/1aa12e04934b6e749962#3-5-%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%88%E3%83%B3%E3%83%A9%E3%83%95%E3%82%BD%E3%83%B3%E3%81%AE%E5%89%B2%E3%82%8A%E7%AE%97%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0
-                auto l_zeros = v2.get_bit_width();
-                auto precision = l_zeros;
-                // 近似値xを算出
-                auto x = fmpint{1};
-                for (; precision < target_precision; precision = l_zeros + x.get_bit_width() - 1) {
-                    const auto before_bit_len = x.get_bit_width();
-                    x = x * ((fmpint{2} << precision) - v2 * x);
-                    const auto after_bit_len = x.get_bit_width();
-                    l_zeros *= 2;
-                    l_zeros -= (after_bit_len - before_bit_len);
-                }
-                // 近似値取得(桁上り考慮のため、_mulを使用)
-                const auto detect_result = fmpint{next_size_fmpint::_mul(next_size_fmpint{v1} << precision, next_size_fmpint{x}) >> precision};
-                const auto detect_inc = detect_result + 1;
-                // 1の誤差有無判定がてら結果返却
-                return v1 >= (detect_inc * v2)
-                    ? detect_inc
-                    : detect_result;
-
                 // // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
-                // // ※約数みたいなもんで、計算回数を減らす
                 // if (
                 //     const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
                 //     max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
@@ -640,19 +615,54 @@ namespace tunum
                 //     return fmpint{_quo};
                 // }
 
-                // // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
-                // const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
-                // auto rem = fmpint{v1};
-                // auto quo = fmpint{};
-                // for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
-                //     const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
-                //     if (rem >= shifted_v2) {
-                //         quo.set_bit(v2_lshift_cnt - i, true);
-                //         rem -= shifted_v2;
-                //     }
-                // }
-                // return quo;
+                // TODO: v1とv2のbit幅が近い場合は、多分筆算アルゴリズムのほうが多分早いのでそのあたりの分岐を考える
+                // return _div_bit_column(v1, v2);
+                return _div_newton(v1, v2);
             }
+        }
+
+        // 2進数による、筆算のような除算実装
+        static constexpr auto _div_bit_column(const fmpint& v1, const fmpint& v2)
+        {
+            // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
+            const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
+            auto rem = fmpint{v1};
+            auto quo = fmpint{};
+            for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
+                const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
+                if (rem >= shifted_v2) {
+                    quo.set_bit(v2_lshift_cnt - i, true);
+                    rem -= shifted_v2;
+                }
+            }
+            return quo;
+        }
+
+        // ニュートン法を用いた逆数近似による除算の実装
+        // 参考: http://www.hundredsoft.jp/win7blog/log/eid94.html
+        // TODO: テストがうまくいかない部分の原因を考える
+        // TODO: いい感じの初期値を決定する
+        static constexpr auto _div_newton(const fmpint& v1, const fmpint& v2)
+        {
+            using double_fmpint = fmpint<(size << 1), Signed>;
+            const int v1_bit_width = v1.get_bit_width();
+            const int v2_bit_width = v2.get_bit_width();
+            const int n = v1_bit_width + v2_bit_width;
+            // 逆数の近似値xを算出、結果はrへ格納し、前回の演算と同一の値となるまで、繰り返す。
+            auto x = double_fmpint{1} << v1_bit_width;
+            const auto c2 = double_fmpint{2} << n;
+            for (auto r = double_fmpint{}; r != x;) {
+                r = x;
+                x *= c2 - v2 * x;
+                x >>= n;
+            }
+            // 近似値取得(桁上り考慮のため、_mulを使用)
+            const auto detect_result = double_fmpint::_mul(double_fmpint{v1}, x) >> n;
+            const auto detect_inc = detect_result + 1;
+            // 1の誤差有無判定がてら結果返却
+            return v1 >= (detect_inc * v2)
+                ? fmpint{detect_inc}
+                : fmpint{detect_result};
         }
 
         // 10 の n乗をあらかじめ計算しておく

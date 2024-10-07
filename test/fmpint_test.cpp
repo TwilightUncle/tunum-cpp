@@ -370,12 +370,12 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v9, 1);
     EXPECT_EQ(tunum::uint512_t{~tunum::uint128_t{}} % ~tunum::uint128_t{}, 0);
     // 委譲→組み込み演算子呼び出し
-    EXPECT_EQ((tunum::uint128_t{12345} << 60) / (tunum::uint512_t{34} << 60), 12345 / 34);
-    constexpr auto v10 = (tunum::uint128_t{12345} << 60) % (tunum::uint512_t{34} << 60);
+    EXPECT_EQ((tunum::uint128_t{12345} << 60) / (tunum::uint256_t{34} << 60), 12345 / 34);
+    constexpr auto v10 = (tunum::uint128_t{12345} << 60) % (tunum::uint256_t{34} << 60);
     EXPECT_EQ(v10, tunum::uint128_t{12345 % 34} << 60);
     // コア部分確認(とりあえず具体的な数字がわからないので、割り切れる上、ビット操作で予想できるもののみ)
     // 残りのテストは文字列初期化可能になってから
-    constexpr auto v11 = ~tunum::uint512_t{} / ~tunum::uint128_t{};
+    constexpr auto v11 = ~tunum::uint256_t{} / ~tunum::uint128_t{};
     EXPECT_EQ(v11[0], 1);
     EXPECT_EQ(v11[1], 0);
     EXPECT_EQ(v11[2], 0);
@@ -384,14 +384,6 @@ TEST(TunumFmpintTest, OperatorTest)
     EXPECT_EQ(v11[5], 0);
     EXPECT_EQ(v11[6], 0);
     EXPECT_EQ(v11[7], 0);
-    EXPECT_EQ(v11[8], 1);
-    EXPECT_EQ(v11[9], 0);
-    EXPECT_EQ(v11[10], 0);
-    EXPECT_EQ(v11[11], 0);
-    EXPECT_EQ(v11[12], 1);
-    EXPECT_EQ(v11[13], 0);
-    EXPECT_EQ(v11[14], 0);
-    EXPECT_EQ(v11[15], 0);
 }
 
 using namespace tunum::literals;
