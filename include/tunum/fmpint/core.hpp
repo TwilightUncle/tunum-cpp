@@ -570,8 +570,8 @@ namespace tunum
             };
 
             // たすき掛けのクロスしてる部分
-            const auto middle_1 = fmpint{v1.lower} += v1.upper;
-            const auto middle_2 = fmpint{v2.lower} += v2.upper;
+            const auto middle_1 = fmpint{v1.lower} + v1.upper;
+            const auto middle_2 = fmpint{v2.lower} + v2.upper;
             const auto is_zero_mid_1u = !middle_1.upper;
             const auto is_zero_mid_2u = !middle_2.upper;
             // N / 2 + 1 桁となる場合も考慮
@@ -579,12 +579,12 @@ namespace tunum
                     fmpint{!is_zero_mid_1u && !is_zero_mid_2u ? 1 : 0},
                     fmpint{inner_mul(middle_1.lower, middle_2.lower)}
                 }
-                += double_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
-                += double_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
-                += -double_fmpint{r1.upper}
-                += -double_fmpint{r1.lower};
+                + double_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
+                + double_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
+                - double_fmpint{r1.upper}
+                - double_fmpint{r1.lower};
 
-            return double_fmpint{r1} += (double_fmpint{r2} <<= (size * 8 / 2));
+            return r1 + (r2 << (size * 8 / 2));
         }
 
         // 除算
@@ -609,8 +609,8 @@ namespace tunum
                     max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
                 ) {
                     const auto _quo = half_fmpint::_div(
-                        (fmpint{v1} >>= min_zero_r_cnt).lower,
-                        (fmpint{v2} >>= min_zero_r_cnt).lower
+                        (v1 >> min_zero_r_cnt).lower,
+                        (v2 >> min_zero_r_cnt).lower
                     );
                     return fmpint{_quo};
                 }
@@ -631,7 +631,7 @@ namespace tunum
             auto rem = fmpint{v1};
             auto quo = fmpint{};
             for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
-                const auto shifted_v2 = fmpint{v2} <<= (v2_lshift_cnt - i);
+                const auto shifted_v2 = v2 << (v2_lshift_cnt - i);
                 if (rem >= shifted_v2) {
                     quo.set_bit(v2_lshift_cnt - i, true);
                     rem -= shifted_v2;
