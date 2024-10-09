@@ -603,21 +603,23 @@ namespace tunum
                 // 組み込みの演算子使えるならそっち優先
                 return fmpint{std::uint64_t{v1} / std::uint64_t{v2}};
             else {
-                // // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
-                // if (
-                //     const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
-                //     max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
-                // ) {
-                //     const auto _quo = half_fmpint::_div(
-                //         (fmpint{v1} >>= min_zero_r_cnt).lower,
-                //         (fmpint{v2} >>= min_zero_r_cnt).lower
-                //     );
-                //     return fmpint{_quo};
-                // }
+                // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
+                if (
+                    const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
+                    max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
+                ) {
+                    const auto _quo = half_fmpint::_div(
+                        (fmpint{v1} >>= min_zero_r_cnt).lower,
+                        (fmpint{v2} >>= min_zero_r_cnt).lower
+                    );
+                    return fmpint{_quo};
+                }
 
-                // TODO: v1とv2のbit幅が近い場合は、多分筆算アルゴリズムのほうが多分早いのでそのあたりの分岐を考える
-                // return _div_bit_column(v1, v2);
-                return _div_newton(v1, v2);
+                // TODO: v1とv2のbit幅が近い場合は、多分筆算アルゴリズムのほうが多分早いので、そのあたりの最適な分岐点を考える
+                // bit幅の差20は仮
+                return (v1.get_bit_width() - v2.get_bit_width() < 20)
+                    ? _div_bit_column(v1, v2)
+                    : _div_newton(v1, v2);
             }
         }
 
@@ -640,7 +642,10 @@ namespace tunum
 
         // ニュートン法を用いた逆数近似による除算の実装
         // 参考: http://www.hundredsoft.jp/win7blog/log/eid94.html
-        // TODO: テストがうまくいかない部分の原因を考える
+        // 
+        // v1とv2のbit幅の合計が、double_fmpintの最大bit幅 - 1以上のとき、
+        // 一部計算時の値のオーバーフローによって正しく計算できないため、
+        // 呼び出し側でbit幅確認の上、オーバーフローが予測される際は_div_bit_columnを呼び出すようにする。
         // TODO: いい感じの初期値を決定する
         static constexpr auto _div_newton(const fmpint& v1, const fmpint& v2)
         {
@@ -653,10 +658,10 @@ namespace tunum
             const auto c2 = double_fmpint{2} << n;
             for (auto r = double_fmpint{}; r != x;) {
                 r = x;
-                x *= c2 - v2 * x;
-                x >>= n;
+                // 桁上り考慮のため_mulを使用
+                x = double_fmpint::_mul(x, c2 - v2 * x) >> n;
             }
-            // 近似値取得(桁上り考慮のため、_mulを使用)
+            // 分母の逆数の近似値と分子を乗算(桁上り考慮のため、_mulを使用)
             const auto detect_result = double_fmpint::_mul(double_fmpint{v1}, x) >> n;
             const auto detect_inc = detect_result + 1;
             // 1の誤差有無判定がてら結果返却
