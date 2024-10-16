@@ -646,21 +646,28 @@ namespace tunum
         // v1とv2のbit幅の合計が、double_fmpintの最大bit幅 - 1以上のとき、
         // 一部計算時の値のオーバーフローによって正しく計算できないため、
         // 呼び出し側でbit幅確認の上、オーバーフローが予測される際は_div_bit_columnを呼び出すようにする。
+        // ※仮にオーバーフローするような場合を実装したとしても、_div_bit_columnのほうが速い
         // TODO: いい感じの初期値を決定する
         static constexpr auto _div_newton(const fmpint& v1, const fmpint& v2)
         {
             using double_fmpint = fmpint<(size << 1), Signed>;
+            // ニュートン法による逆数の近似値xを算出
+            constexpr auto calc_newton = [](const fmpint& q, const int n, const double_fmpint& init) {
+                auto x = init;
+                const auto c2 = double_fmpint{2} << n;
+                for (auto m = double_fmpint{}; m != x;) {
+                    m = x;
+                    // 桁上り考慮のため_mulを使用
+                    x = double_fmpint::_mul(x, c2 - q * x) >> n;
+                }
+                return x;
+            };
+
             const int v1_bit_width = v1.get_bit_width();
             const int v2_bit_width = v2.get_bit_width();
             const int n = v1_bit_width + v2_bit_width;
-            // 逆数の近似値xを算出、結果はrへ格納し、前回の演算と同一の値となるまで、繰り返す。
-            auto x = double_fmpint{1} << v1_bit_width;
-            const auto c2 = double_fmpint{2} << n;
-            for (auto r = double_fmpint{}; r != x;) {
-                r = x;
-                // 桁上り考慮のため_mulを使用
-                x = double_fmpint::_mul(x, c2 - v2 * x) >> n;
-            }
+            const auto x = calc_newton(v2, n, double_fmpint{1} << v1_bit_width);
+
             // 分母の逆数の近似値と分子を乗算(桁上り考慮のため、_mulを使用)
             const auto detect_result = double_fmpint::_mul(double_fmpint{v1}, x) >> n;
             const auto detect_inc = detect_result + 1;
