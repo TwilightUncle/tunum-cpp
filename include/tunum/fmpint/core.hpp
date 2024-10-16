@@ -3,6 +3,7 @@
 
 #include TUNUM_COMMON_INCLUDE(floating.hpp)
 #include TUNUM_COMMON_INCLUDE(number_array.hpp)
+#include TUNUM_COMMON_INCLUDE(fmpint/arithmetic.hpp)
 
 #include <array>
 #include <stdexcept>
@@ -276,16 +277,16 @@ namespace tunum
         }
 
         // 加算代入
-        constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = _add(*this, fmpint{v}); }
+        constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = _fmpint::arithmetic{*this, fmpint{v}}.add(); }
 
         // 減算代入
         constexpr auto& operator-=(const TuIntegral auto& v) noexcept { return *this += -fmpint{v}; }
 
         // 乗算代入
-        constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _mul(*this, fmpint{v}); }
+        constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _fmpint::arithmetic{*this, fmpint{v}}.mul(); }
 
         // 除算代入
-        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _div(*this, fmpint{v}); }
+        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _fmpint::arithmetic{*this, fmpint{v}}.div(); }
     
         // 剰余代入
         constexpr auto& operator%=(const TuIntegral auto& v) { return *this -= (fmpint{v} *= (fmpint{*this} /= v)); }
@@ -510,171 +511,6 @@ namespace tunum
             return upper_comp != 0
                 ? upper_comp
                 : inner_compare(this->lower, v.lower);
-        }
-
-        // 加算
-        static constexpr auto _add(const fmpint& v1, const fmpint& v2) noexcept
-        {
-            constexpr auto inner_add = [](const half_fmpint& l, const half_fmpint& r, bool is_zero_l, bool is_zero_r) -> half_fmpint {
-                if (is_zero_r)
-                    return l;
-                if (is_zero_l)
-                    return r;
-                if constexpr (is_min_size)
-                    return l + r;
-                else
-                    return half_fmpint::_add(l, r);
-            };
-
-            const auto is_zero_v1_l = !v1.lower;
-            const auto is_zero_v1_u = !v1.upper;
-            const auto is_zero_v2_l = !v2.lower;
-            const auto is_zero_v2_u = !v2.upper;
-            if (is_zero_v1_l && is_zero_v2_u || is_zero_v1_u && is_zero_v2_l)
-                return fmpint{v1} |= v2;
-
-            // 2 桁の筆算のような感じ
-            auto r = fmpint{};
-            r.lower = inner_add(v1.lower, v2.lower, is_zero_v1_l, is_zero_v2_l);
-            r.upper = inner_add(v1.upper, v2.upper, is_zero_v1_u, is_zero_v2_u);
-
-            // 桁上りがある場合
-            if ((~v1.lower) < v2.lower)
-                r.upper = inner_add(r.upper, 1, !r.upper, false);
-            return r;
-        }
-
-        // 乗算
-        // TODO: FFTによる高速化
-        static constexpr auto _mul(const fmpint& v1, const fmpint& v2) noexcept
-        {
-            using double_fmpint = fmpint<(size << 1), Signed>;
-            constexpr auto inner_mul = [](const half_fmpint& l, const half_fmpint& r) {
-                if constexpr (is_min_size)
-                    return fmpint{std::uint64_t(l) * std::uint64_t(r)};
-                else
-                    return half_fmpint::_mul(l, r);
-            };
-
-            const auto is_zero_v1_l = !v1.lower;
-            const auto is_zero_v1_u = !v1.upper;
-            const auto is_zero_v2_l = !v2.lower;
-            const auto is_zero_v2_u = !v2.upper;
-            if (is_zero_v1_l && is_zero_v1_u || is_zero_v2_l && is_zero_v2_u)
-                return double_fmpint{0};
-
-            // カラツバ法
-            const auto r1 = double_fmpint{
-                (!is_zero_v1_u && !is_zero_v2_u) ? fmpint{inner_mul(v1.upper, v2.upper)} : fmpint{},
-                (!is_zero_v1_l && !is_zero_v2_l) ? fmpint{inner_mul(v1.lower, v2.lower)} : fmpint{}
-            };
-
-            // たすき掛けのクロスしてる部分
-            const auto middle_1 = fmpint{v1.lower} + v1.upper;
-            const auto middle_2 = fmpint{v2.lower} + v2.upper;
-            const auto is_zero_mid_1u = !middle_1.upper;
-            const auto is_zero_mid_2u = !middle_2.upper;
-            // N / 2 + 1 桁となる場合も考慮
-            const auto r2 = double_fmpint{
-                    fmpint{!is_zero_mid_1u && !is_zero_mid_2u ? 1 : 0},
-                    fmpint{inner_mul(middle_1.lower, middle_2.lower)}
-                }
-                + double_fmpint{is_zero_mid_1u ? fmpint{} : fmpint{fmpint{middle_2.lower}, fmpint{}}}
-                + double_fmpint{is_zero_mid_2u ? fmpint{} : fmpint{fmpint{middle_1.lower}, fmpint{}}}
-                - double_fmpint{r1.upper}
-                - double_fmpint{r1.lower};
-
-            return r1 + (r2 << (size * 8 / 2));
-        }
-
-        // 除算
-        // v1 と v2の差が大きく、両端の連続した0が少ない値ほど計算量も増える
-        static constexpr auto _div(const fmpint& v1, const fmpint& v2)
-        {
-            // 重いので計算せずとも自明なものはここではじいておく
-            if (!v2)
-                throw std::invalid_argument{"0 div."};
-            if (!v1 || v1 < v2)
-                return fmpint{};
-            if (v2 == 1)
-                return fmpint{v1};
-
-            if constexpr (is_min_size)
-                // 組み込みの演算子使えるならそっち優先
-                return fmpint{std::uint64_t{v1} / std::uint64_t{v2}};
-            else {
-                // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
-                if (
-                    const auto min_zero_r_cnt = (std::min)(v1.countr_zero_bit(), v2.countr_zero_bit());
-                    max_digits2 - (v1.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
-                ) {
-                    const auto _quo = half_fmpint::_div(
-                        (v1 >> min_zero_r_cnt).lower,
-                        (v2 >> min_zero_r_cnt).lower
-                    );
-                    return fmpint{_quo};
-                }
-
-                // TODO: v1とv2のbit幅が近い場合は、多分筆算アルゴリズムのほうが多分早いので、そのあたりの最適な分岐点を考える
-                // bit幅の差20は仮
-                return (v1.get_bit_width() - v2.get_bit_width() < 20)
-                    ? _div_bit_column(v1, v2)
-                    : _div_newton(v1, v2);
-            }
-        }
-
-        // 2進数による、筆算のような除算実装
-        static constexpr auto _div_bit_column(const fmpint& v1, const fmpint& v2)
-        {
-            // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
-            const std::size_t v2_lshift_cnt = v1.get_bit_width() - v2.get_bit_width();
-            auto rem = fmpint{v1};
-            auto quo = fmpint{};
-            for (std::size_t i = 0; i <= v2_lshift_cnt; i++) {
-                const auto shifted_v2 = v2 << (v2_lshift_cnt - i);
-                if (rem >= shifted_v2) {
-                    quo.set_bit(v2_lshift_cnt - i, true);
-                    rem -= shifted_v2;
-                }
-            }
-            return quo;
-        }
-
-        // ニュートン法を用いた逆数近似による除算の実装
-        // 参考: http://www.hundredsoft.jp/win7blog/log/eid94.html
-        // 
-        // v1とv2のbit幅の合計が、double_fmpintの最大bit幅 - 1以上のとき、
-        // 一部計算時の値のオーバーフローによって正しく計算できないため、
-        // 呼び出し側でbit幅確認の上、オーバーフローが予測される際は_div_bit_columnを呼び出すようにする。
-        // ※仮にオーバーフローするような場合を実装したとしても、_div_bit_columnのほうが速い
-        // TODO: いい感じの初期値を決定する
-        static constexpr auto _div_newton(const fmpint& v1, const fmpint& v2)
-        {
-            using double_fmpint = fmpint<(size << 1), Signed>;
-            // ニュートン法による逆数の近似値xを算出
-            constexpr auto calc_newton = [](const fmpint& q, const int n, const double_fmpint& init) {
-                auto x = init;
-                const auto c2 = double_fmpint{2} << n;
-                for (auto m = double_fmpint{}; m != x;) {
-                    m = x;
-                    // 桁上り考慮のため_mulを使用
-                    x = double_fmpint::_mul(x, c2 - q * x) >> n;
-                }
-                return x;
-            };
-
-            const int v1_bit_width = v1.get_bit_width();
-            const int v2_bit_width = v2.get_bit_width();
-            const int n = v1_bit_width + v2_bit_width;
-            const auto x = calc_newton(v2, n, double_fmpint{1} << v1_bit_width);
-
-            // 分母の逆数の近似値と分子を乗算(桁上り考慮のため、_mulを使用)
-            const auto detect_result = double_fmpint::_mul(double_fmpint{v1}, x) >> n;
-            const auto detect_inc = detect_result + 1;
-            // 1の誤差有無判定がてら結果返却
-            return v1 >= (detect_inc * v2)
-                ? fmpint{detect_inc}
-                : fmpint{detect_result};
         }
 
         // 10 の n乗をあらかじめ計算しておく
