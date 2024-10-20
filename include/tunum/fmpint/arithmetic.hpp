@@ -52,7 +52,10 @@ namespace tunum::_fmpint
 
         // どちらかあるいは、両方ゼロ
         constexpr bool is_either_zero()
-        { return !op_l || !op_r; }
+        {
+            return is_zero_op_l_l && is_zero_op_l_u
+                || is_zero_op_r_l && is_zero_op_r_u;
+        }
 
         // ----------------------------
         // 加算
