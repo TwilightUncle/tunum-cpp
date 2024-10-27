@@ -62,29 +62,35 @@ namespace tunum::_fmpint
         // ----------------------------
 
         // 加算
-        constexpr fi add() noexcept
+        // @param is_calculated_inv 桁上り判定用のビット反転が計算済みかどうか
+        constexpr fi add(bool is_calculated_inv = false, const fi& inv_op_l = fi{}) noexcept
         {
             // 確実にbitの重複がない場合、論理和を取ることで加算となる
             if (is_not_duplicated() || is_either_zero())
                 return op_l | op_r;
 
+            // ビット反転の計算がない場合は、ここで実施。
+            // より小さい型へ、再帰的に同様の計算が発生してしまうため、
+            // is_calculated_invを参照して、一度のみ計算させる。
+            const auto inv_op_l_lower = is_calculated_inv ? inv_op_l.lower : ~op_l.lower;
+
             // 2 桁の筆算のような感じ
             auto result = fi{};
-            result.lower = add_minor(op_l.lower, op_r.lower);
-            result.upper = add_minor(op_l.upper, op_r.upper);
+            result.lower = add_minor(op_l.lower, op_r.lower, is_calculated_inv, inv_op_l_lower);
+            result.upper = add_minor(op_l.upper, op_r.upper, is_calculated_inv, inv_op_l.upper);
 
             // 桁上りがある場合
-            if ((~op_l.lower) < op_r.lower)
-                result.upper = add_minor(result.upper, 1);
+            if (inv_op_l_lower < op_r.lower)
+                result.upper = add_minor(result.upper, 1, false);
             return result;
         }
 
         // 再帰の制御
-        static constexpr half_fi add_minor(const half_fi& l, const half_fi& r) noexcept {
+        static constexpr half_fi add_minor(const half_fi& l, const half_fi& r, bool is_calculated_inv, const fi& inv_op_l = fi{}) noexcept {
             if constexpr (is_min_size)
                 return l + r;
             else
-                return arithmetic<(size >> 1), Signed>{l, r}.add();
+                return arithmetic<(size >> 1), Signed>{l, r}.add(is_calculated_inv, inv_op_l);
         }
 
         // ----------------------------
