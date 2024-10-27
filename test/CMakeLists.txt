@@ -23,6 +23,7 @@ if (CMAKE_PROJECT_NAME STREQUAL "tunum")
     
     # ソース列挙
     target_sources(tunumtest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/math_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/fmpint_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/bit_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/floating_test.cpp
