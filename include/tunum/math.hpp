@@ -6,9 +6,7 @@
 #endif
 
 #include TUNUM_COMMON_INCLUDE(concepts.hpp)
-
-#include <numbers>
-#include <stdexcept>
+#include TUNUM_COMMON_INCLUDE(math/exp.hpp)
 
 namespace tunum
 {
@@ -19,7 +17,7 @@ namespace tunum
     // 参考: https://qiita.com/MilkySaitou/items/614fcbb110cae5b9f797
     // @tparam FloatT 任意の組み込み浮動小数点型
     // @param x 求めたい自然対数の真数
-    // @param n 求める項の数(精度)。0の場合は、計算結果に変更がなくなるまで計算を繰り返す
+    // @param n 求める項の数(精度)。0の場合は、収束するまで計算を繰り返す
     template <std::floating_point FloatT>
     inline constexpr FloatT ln(FloatT x, std::size_t n = 0)
     {
@@ -51,7 +49,7 @@ namespace tunum
             const FloatT before_total = total;
             total += (sign * numerator / i);
 
-            // 計算結果に変化がなくなった場合、処理を終了
+            // 計算結果に変化がなくなった場合、収束したとして処理を終了
             if (before_total == total)
                 break;
 
