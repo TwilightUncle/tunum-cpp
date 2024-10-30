@@ -5,6 +5,8 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
+#include <stdexcept>
+
 #include TUNUM_COMMON_INCLUDE(concepts.hpp)
 #include TUNUM_COMMON_INCLUDE(math/exp.hpp)
 
