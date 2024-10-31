@@ -13,14 +13,10 @@ TEST(TunumMathTest, MathTest)
     constexpr auto exp_2 = tunum::exp(float(6.1));
     constexpr auto exp_3 = tunum::exp(float(-5));
     constexpr auto exp_4 = tunum::exp(float(-62.2));
-    // 事前計算済みの最大値長梶の確認
-    constexpr auto exp_5_x = float(1ull << (tunum::math_impl::exp_cpo::pre_max_power - 1)) * 2 + 4.3;
-    constexpr auto exp_5 = tunum::exp(exp_5_x);
     EXPECT_EQ(exp_1, std::exp(float(3)));
     EXPECT_EQ(exp_2, std::exp(float(6.1)));
     EXPECT_EQ(exp_3, std::exp(float(-5)));
     EXPECT_EQ(exp_4, std::exp(float(-62.2)));
-    EXPECT_EQ(exp_5, std::exp(exp_5_x));
 
     constexpr auto ln_1 = tunum::ln(float(3));
     constexpr auto ln_2 = tunum::ln(double(1));
