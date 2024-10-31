@@ -13,6 +13,17 @@
 
 namespace tunum
 {
+    /// ある式がコンパイル時評価可能か判定。
+    /// @code
+    /// if constexpr (is_constexpr([]{ /* any expression */ }))
+    ///     ...
+    /// @endcode
+    /// @param Lambda ラムダ式の内部にて判定対象の式を記述
+    /// @note 参考: https://yohhoy.hatenadiary.jp/entry/20230908/p1
+    template<class Lambda, int = (Lambda{}(), 0)>
+    constexpr bool is_constexpr(Lambda) { return true; }
+    constexpr bool is_constexpr(...) { return false; }
+
     // 前方宣言
     template <std::size_t Bytes, bool Signed>
     struct fmpint;
