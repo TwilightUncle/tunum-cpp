@@ -4,39 +4,43 @@
 #include TUNUM_COMMON_INCLUDE(concepts.hpp)
 #include TUNUM_COMMON_INCLUDE(floating.hpp)
 
+#include <bit>
 #include <cmath>
 #include <array>
 #include <numbers>
+#include <limits>
 
 namespace tunum::math_impl
 {
     // 組み込み浮動小数点型の独自実装
     // @note 参考: https://qiita.com/MilkySaitou/items/614fcbb110cae5b9f797
+    // TODO: stdfloatにも対応が必要か？
     struct std_floating_exp_impl
     {
-        // 下記以降のインデックスの計算済みテーブルはdouble型で無限大となるため、10までしか計算しない
-        static constexpr int pre_max_power = 10;
+        // 下記以降のインデックスの計算済みテーブルはlong double型で無限大となる最大指数までしか計算しない
+        static constexpr int pre_max_power = std::bit_width((std::uint64_t)std::numeric_limits<long double>::max_exponent) - 1;
         // 10以降のインデックスの計算済みテーブルは無限大となるため、計算しない
-        static constexpr auto pre_table_size = (std::min)(pre_max_power, 10) + 1;
+        static constexpr auto pre_table_size = pre_max_power + 1;
 
         // 2の累乗値による指数の計算済みテーブル
-        static constexpr auto pre_table = []() {
-            auto table = std::array<double, pre_table_size>{};
+        static constexpr auto pre_table = [] {
+            auto table = std::array<long double, pre_table_size>{};
             table[0] = 1;
+            auto value = std::numbers::e_v<long double>;
             for (int i = 1; i < pre_table_size; i++)
                 table[i] = i == 1
-                    ? std::numbers::e_v<double>
-                    : table[i - 1] * table[i - 1];
+                    ? value
+                    : (value *= value);
             return table;
         }();
 
         // 整数部分
         template <std::floating_point FloatT>
-        static constexpr std::array<double, 2> exp_uint(FloatT x) noexcept
+        static constexpr std::array<long double, 2> exp_uint(FloatT x) noexcept
         {
-            double result = 1;
+            long double result = 1;
             for (int i = pre_max_power; i > 0; i--)
-                for (const auto power_of_2 = 1ull << i - 1; x >= power_of_2; x -= power_of_2)
+                for (const auto power_of_2 = 1ull << (i - 1); x >= power_of_2; x -= power_of_2)
                     result *= pre_table[i];
             return {x, result};
         }
@@ -44,8 +48,8 @@ namespace tunum::math_impl
         // マクローリン展開による近似
         static constexpr auto exp_maclaurin(std::floating_point auto x) noexcept
         {
-            double a = 1;
-            double total = 1;
+            long double a = 1;
+            long double total = 1;
             for (int i = 1; true; i++) {
                 const auto before_total = total;
                 a *= x / i;
@@ -64,7 +68,7 @@ namespace tunum::math_impl
             if (x < 0)
                 return 1. / run<FloatT>(-x);
 
-            // x > 2 ^ 10 の場合、double型は無限大となるので、最大値返却
+            // x > 2 ^ 10 の場合、long double型は無限大となるので、最大値返却
             if (x >= (2ull << pre_max_power))
                 return pre_table.back();
                 
@@ -85,7 +89,7 @@ namespace tunum::math_impl
     inline constexpr auto exp(FloatT x) noexcept
     {
         // 標準ライブラリの指数関数がコンパイル時評価可能だったら常に標準ライブラリの実装を使う
-        if constexpr (is_constexpr([] { return std::exp(FloatT{}); }))
+        if constexpr (is_constexpr([] { auto val = std::exp(FloatT{}); }))
             return std::exp(x);
         else {
             if (!std::is_constant_evaluated())

@@ -20,6 +20,7 @@ namespace tunum
     /// @endcode
     /// @param Lambda ラムダ式の内部にて判定対象の式を記述
     /// @note 参考: https://yohhoy.hatenadiary.jp/entry/20230908/p1
+    /// TODO: 汎用的なため、tumpへ定義を移動か？
     template<class Lambda, int = (Lambda{}(), 0)>
     constexpr bool is_constexpr(Lambda) { return true; }
     constexpr bool is_constexpr(...) { return false; }
