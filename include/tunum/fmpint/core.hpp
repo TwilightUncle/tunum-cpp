@@ -277,16 +277,16 @@ namespace tunum
         }
 
         // 加算代入
-        constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = _fmpint::arithmetic{*this, fmpint{v}}.add(); }
+        constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = _fmpint_impl::arithmetic{*this, fmpint{v}}.add(); }
 
         // 減算代入
         constexpr auto& operator-=(const TuIntegral auto& v) noexcept { return *this += -fmpint{v}; }
 
         // 乗算代入
-        constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _fmpint::arithmetic{*this, fmpint{v}}.mul(); }
+        constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = _fmpint_impl::arithmetic{*this, fmpint{v}}.mul(); }
 
         // 除算代入
-        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _fmpint::arithmetic{*this, fmpint{v}}.div(); }
+        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = _fmpint_impl::arithmetic{*this, fmpint{v}}.div(); }
     
         // 剰余代入
         constexpr auto& operator%=(const TuIntegral auto& v) { return *this -= (fmpint{v} *= (fmpint{*this} /= v)); }

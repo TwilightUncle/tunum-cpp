@@ -3,7 +3,7 @@
 
 #include TUNUM_COMMON_INCLUDE(mp.hpp)
 
-namespace tunum::_fmpint
+namespace tunum::_fmpint_impl
 {
     // ----------------------------------
     // クラス実装のうち、算術演算の実装を別クラスとして分離

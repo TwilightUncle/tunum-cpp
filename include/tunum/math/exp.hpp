@@ -10,7 +10,7 @@
 #include <numbers>
 #include <limits>
 
-namespace tunum::math_impl
+namespace tunum::_math_impl
 {
     // 組み込み浮動小数点型の独自実装
     // @note 参考: https://qiita.com/MilkySaitou/items/614fcbb110cae5b9f797
@@ -109,7 +109,7 @@ namespace tunum
 {
     // 指数関数の近似値算出。
     // @param x 求めたい指数
-    inline constexpr math_impl::exp_cpo exp{};
+    inline constexpr _math_impl::exp_cpo exp{};
 }
 
 #endif

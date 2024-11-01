@@ -11,7 +11,7 @@
 
 #include TUNUM_COMMON_INCLUDE(concepts.hpp)
 
-namespace tunum::bit_impl
+namespace tunum::_bit_impl
 {
     using std::rotl;
     template <TuFmpUnsigned T>
@@ -148,37 +148,37 @@ namespace tunum::bit_impl
 namespace tunum
 {
     // 左循環シフト
-    inline constexpr bit_impl::rotl_cpo rotl{};
+    inline constexpr _bit_impl::rotl_cpo rotl{};
 
     // 右循環シフト
-    inline constexpr bit_impl::rotr_cpo rotr{};
+    inline constexpr _bit_impl::rotr_cpo rotr{};
 
     // 左から連続した0のビットを数える
-    inline constexpr bit_impl::countl_zero_cpo countl_zero{};
+    inline constexpr _bit_impl::countl_zero_cpo countl_zero{};
 
     // 右から連続し0のビットを数える
-    inline constexpr bit_impl::countr_zero_cpo countr_zero{};
+    inline constexpr _bit_impl::countr_zero_cpo countr_zero{};
 
     // 左から連続した1のビットを数える
-    inline constexpr bit_impl::countl_one_cpo countl_one{};
+    inline constexpr _bit_impl::countl_one_cpo countl_one{};
 
     // 右から連続した1のビットを数える
-    inline constexpr bit_impl::countr_one_cpo countr_one{};
+    inline constexpr _bit_impl::countr_one_cpo countr_one{};
 
     // 立っているビット数をカウント
-    inline constexpr bit_impl::popcount_cpo popcount{};
+    inline constexpr _bit_impl::popcount_cpo popcount{};
 
     // 一つだけbitが立っているか判定
-    inline constexpr bit_impl::has_single_bit_cpo has_single_bit{};
+    inline constexpr _bit_impl::has_single_bit_cpo has_single_bit{};
 
     // 値を表現するのに必要なビット幅を取得
-    inline constexpr bit_impl::bit_width_cpo bit_width{};
+    inline constexpr _bit_impl::bit_width_cpo bit_width{};
 
     // 整数値を2の累乗に押し上げる
-    inline constexpr bit_impl::bit_ceil_cpo bit_ceil{};
+    inline constexpr _bit_impl::bit_ceil_cpo bit_ceil{};
 
     // 整数を2の累乗に押し下げる
-    inline constexpr bit_impl::bit_floor_cpo bit_floor{};
+    inline constexpr _bit_impl::bit_floor_cpo bit_floor{};
 }
 
 #endif
