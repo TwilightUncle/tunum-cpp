@@ -11,55 +11,58 @@
 
 #include TUNUM_COMMON_INCLUDE(concepts.hpp)
 
+namespace tunum::_fmpint_impl
+{
+    template <std::size_t Bytes, bool Signed> struct bit_operator;
+}
+
 namespace tunum::_bit_impl
 {
     using std::rotl;
     template <TuFmpUnsigned T>
     constexpr T rotl(const T& x, int s) noexcept
-    { return x.rotate_l(s); }
+    { return _fmpint_impl::bit_operator{x}.rotate_l(s); }
 
     using std::rotr;
     template <TuFmpUnsigned T>
     constexpr T rotr(const T& x, int s) noexcept
-    { return x.rotate_r(s); }
+    { return _fmpint_impl::bit_operator{x}.rotate_r(s); }
 
     using std::countl_zero;
     constexpr int countl_zero(const TuFmpUnsigned auto& x) noexcept
-    { return x.countl_zero_bit(); }
+    { return _fmpint_impl::bit_operator{x}.countl_zero_bit(); }
 
     using std::countr_zero;
     constexpr int countr_zero(const TuFmpUnsigned auto& x) noexcept
-    { return x.countr_zero_bit(); }
+    { return _fmpint_impl::bit_operator{x}.countr_zero_bit(); }
 
     using std::countl_one;
     constexpr int countl_one(const TuFmpUnsigned auto& x) noexcept
-    { return x.countl_one_bit(); }
+    { return _fmpint_impl::bit_operator{x}.countl_one_bit(); }
 
     using std::countr_one;
     constexpr int countr_one(const TuFmpUnsigned auto& x) noexcept
-    { return x.countr_one_bit(); }
+    { return _fmpint_impl::bit_operator{x}.countr_one_bit(); }
 
     using std::popcount;
     constexpr int popcount(const TuFmpUnsigned auto& x) noexcept
-    { return x.count_one_bit(); }
+    { return _fmpint_impl::bit_operator{x}.count_one_bit(); }
 
     using std::has_single_bit;
     constexpr bool has_single_bit(const TuFmpUnsigned auto& x) noexcept
-    { return x.count_one_bit() == 1; }
+    { return _fmpint_impl::bit_operator{x}.count_one_bit() == 1; }
 
     using std::bit_width;
     constexpr int bit_width(const TuFmpUnsigned auto& x) noexcept
-    { return x.get_bit_width(); }
+    { return _fmpint_impl::bit_operator{x}.get_bit_width(); }
 
     using std::bit_ceil;
     template <TuFmpUnsigned T>
     constexpr T bit_ceil(const T& x) noexcept
     {
-        if (has_single_bit(x))
-            return x;
-        T v{};
-        v.set_bit(bit_width(x), true);
-        return v;
+        return (has_single_bit(x))
+            ? x
+            : T{1} << bit_width(x);
     }
 
     using std::bit_floor;
@@ -68,10 +71,9 @@ namespace tunum::_bit_impl
     {
         if (has_single_bit(x))
             return x;
-        T v{};
-        if (x > 0)
-            v.set_bit(bit_width(x) - 1, true);
-        return v;
+        return (x > 0)
+            ? T{1} << bit_width(x) - 1
+            : T{};
     }
 
     struct rotl_cpo

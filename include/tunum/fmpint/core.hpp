@@ -213,34 +213,12 @@ namespace tunum
 
         // 左シフト
         constexpr auto& operator<<=(std::size_t n) noexcept
-        {
-            const auto shift_mod = n % base_data_digits2;
-            const auto shift_mul = n / base_data_digits2;
-
-            if (data_length <= shift_mul)
-                return *this = fmpint{};
-            
-            *this = this->rotate_l(n);
-
-            // ローテート演算で回ってきた部分を除去
-            const auto fill_mask = ~base_data_t{} << shift_mod;
-            for (std::size_t i = 0; i < shift_mul; i++)
-                (*this)[i] = 0;
-            (*this)[shift_mul] &= fill_mask;
-            return *this;
-        }
+        { return *this = _fmpint_impl::bit_operator(*this).shift_l(n); }
 
         // 右シフト
         // 算術シフトか、論理シフトかは処理系に準拠
         constexpr auto& operator>>=(std::size_t n) noexcept
-        {
-            // 組み込み整数の右シフトが算術シフトとして実装されているか判定
-            // ※最上ビットが1の状態で、右シフト後の最上位ビットが1であれば算術シフト、そうでなければ論理シフト
-            constexpr auto is_use_sal = Signed
-                ? ((-1) >> 1) == -1
-                : ((~0u) >> 1) == (~0u);
-            return (*this) = this->shift_r(n, is_use_sal);
-        }
+        { return *this = _fmpint_impl::bit_operator(*this).shift_r(n); }
 
         // ビット論理和代入
         constexpr auto& operator|=(const fmpint& v) noexcept
@@ -303,149 +281,9 @@ namespace tunum
         // ビット操作メンバ関数
         // -------------------------------------------
 
-        // ビット左ローテーション
-        constexpr fmpint rotate_l(int s) const noexcept
-        {
-            auto this_clone = fmpint{*this};
-            if (!s) return this_clone;
-            if (s < 0) return this->rotate_r(-s);
-
-            const auto shift_mod = s % base_data_digits2;
-            const auto i_diff = s / base_data_digits2;
-            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
-
-            for (std::size_t i = 0; i < data_length; i++) {
-                auto& elem = this_clone[(i + i_diff) % data_length];
-                elem = ((*this)[i] << shift_mod);
-                if (shift_com)
-                    elem |= ((*this)[(i + data_length - 1) % data_length] >> shift_com);
-            }
-            return this_clone;
-        }
-
-        // ビット右ローテーション
-        constexpr fmpint rotate_r(int s) const noexcept
-        {
-            const int l_s = s < 0
-                ? -s
-                : max_digits2 - (s % max_digits2);
-            return this->rotate_l(l_s);
-        }
-
-        // 右シフト
-        // 論理シフトと算術シフトのどちらを利用するか制御引数で制御
-        // デフォルトでは論理シフト
-        constexpr fmpint shift_r(std::size_t n, bool is_use_sal = false) const noexcept
-        {
-            const auto shift_mod = n % base_data_digits2;
-            const auto shift_com = (base_data_digits2 - shift_mod) % base_data_digits2;
-            const auto shift_mul = n / base_data_digits2;
-
-            if (data_length <= shift_mul)
-                return fmpint{};
-            
-            auto new_obj = this->rotate_r(n);
-
-            // ローテート演算で回ってきた部分を除去
-            // 算術シフトかつ、最上位ビットが立っている場合、回ってきた部分は1で埋める
-            const auto highest_bit = new_obj.get_back_bit();
-            const auto fill_mask = ~base_data_t{} << shift_com;
-            const auto is_fill_one = is_use_sal && highest_bit;
-            for (std::size_t i = 0; i < shift_mul; i++)
-                new_obj[data_length - 1 - i] = base_data_t{is_fill_one} * ~base_data_t{};
-            if (fill_mask != ~base_data_t{}) {
-                if (is_fill_one)
-                    new_obj[data_length - 1 - shift_mul] ^= fill_mask;
-                else
-                    new_obj[data_length - 1 - shift_mul] &= ~fill_mask;
-            }
-            return new_obj;
-        }
-
-        // 左側に連続している 0 ビットの数を返却
-        constexpr auto countl_zero_bit() const noexcept { return this->count_continuous_bit(false, true); }
-
-        // 左側に連続している 1 ビットの数を返却
-        constexpr auto countl_one_bit() const noexcept { return this->count_continuous_bit(true, true); }
-
-        // 右側に連続している 0 ビットの数を返却
-        constexpr auto countr_zero_bit() const noexcept { return this->count_continuous_bit(false, false); }
-
-        // 右側に連続している 1 ビットの数を返却
-        constexpr auto countr_one_bit() const noexcept { return this->count_continuous_bit(true, false); }
-
-        // 寝ているビットをカウント
-        constexpr auto count_zero_bit() const noexcept { return (~(*this)).count_one_bit(); }
-
-        // 立っているビットをカウント
-        constexpr auto count_one_bit() const noexcept
-        {
-            constexpr auto inner_count = [](const half_fmpint& v) {
-                if constexpr (is_min_size)
-                    return std::popcount(v);
-                else
-                    return v.count_one_bit();
-            };
-            return inner_count(this->lower) + inner_count(this->upper);
-        }
-
-        // 全てのビットが立っているかどうか判定。
-        // 引数にfalseを指定すると、すべてのビットが寝ているかどうか判定
-        constexpr bool is_full_bit(const bool bit = true) const noexcept
-        {
-            return bit
-                ? this->count_zero_bit() == 0
-                : this->count_one_bit() == 0;
-        }
-
-        // 指定されたビットが指定の方向(左右)から連続でいくつ並んでいるかかカウント
-        constexpr auto count_continuous_bit(bool bit, bool is_begin_l) const noexcept
-        {
-            constexpr auto inner_f = [](const half_fmpint& v, bool _bit, bool _is_begin_l) {
-                if constexpr (is_min_size) {
-                    // ビット反転すると結果は同じでしょう
-                    const auto _v = !_bit ? ~v : v;
-                    return _is_begin_l ? std::countl_one(_v) : std::countr_one(_v);
-                }
-                else
-                    return v.count_continuous_bit(_bit, _is_begin_l);
-            };
-
-            const auto first_bit_cnt = inner_f(is_begin_l ? this->upper : this->lower, bit, is_begin_l); 
-            // フルビットじゃなければ連続していないのでその場で返却
-            return first_bit_cnt != (base_data_digits2 * data_length / 2)
-                ? first_bit_cnt
-                : first_bit_cnt + inner_f(is_begin_l ? this->lower : this->upper, bit, is_begin_l);
-        }
-
-        // 格納値を表現するのに必要なビット幅を返却
-        constexpr auto get_bit_width() const noexcept { return max_digits2 - this->countl_zero_bit(); }
-
-        // 指定位置のビットを取得
-        constexpr bool get_bit(std::size_t i) const
-        {
-            const auto base_data_index = i / base_data_digits2;
-            const auto bit_pos = i % base_data_digits2;
-            return bool(this->at(base_data_index) & (base_data_t{1} << bit_pos));
-        }
-
-        // 先頭ビットを取得
-        constexpr bool get_front_bit() const noexcept { return this->get_bit(0); }
-
-        // 最後尾ビットを取得
-        constexpr bool get_back_bit() const noexcept { return this->get_bit(max_digits2 - 1); }
-
         // 指定位置のビットを変更
         constexpr void set_bit(std::size_t i, bool value)
-        {
-            const auto base_data_index = i / base_data_digits2;
-            const auto bit_pos = i % base_data_digits2;
-            const auto single_bit = base_data_t{1} << bit_pos;
-            if (!value)
-                this->at(base_data_index) &= (~single_bit);
-            else
-                this->at(base_data_index) |= single_bit;
-        }
+        { *this = _fmpint_impl::bit_operator{*this}.change_bit(i, value); }
 
         // -------------------------------------------
         // 内部的な実装
@@ -469,7 +307,7 @@ namespace tunum
         }
 
         // マイナスかどうか判定
-        constexpr bool _is_minus() const noexcept { return Signed && this->get_back_bit(); }
+        constexpr bool _is_minus() const noexcept { return Signed && _fmpint_impl::bit_operator{*this}.get_back_bit(); }
 
         // 内部表現はそのままに符号なし整数へ変換
         constexpr fmpint<Bytes, false> _to_unsigned() const noexcept
@@ -586,7 +424,7 @@ namespace tunum
                 const auto shift_v = v.exponent(false);
                 new_obj = shift_v >= 0
                     ? fmpint{v.mantissa()} <<= std::size_t(shift_v)
-                    : fmpint{v.mantissa()}.shift_r(-shift_v);
+                    : _fmpint_impl::bit_operator(fmpint{v.mantissa()}).shift_r(-shift_v, false);
             }
 
             // 小数点以下の丸め方法を変換元の浮動小数点に準じるため、

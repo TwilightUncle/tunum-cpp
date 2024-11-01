@@ -1,7 +1,7 @@
 #ifndef TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_IMPL_ARITHMETIC_HPP
 #define TUNUM_INCLUDE_GUARD_TUNUM_FMPINT_IMPL_ARITHMETIC_HPP
 
-#include TUNUM_COMMON_INCLUDE(mp.hpp)
+#include TUNUM_COMMON_INCLUDE(fmpint/impl/bit_operator.hpp)
 
 namespace tunum::_fmpint_impl
 {
@@ -30,7 +30,7 @@ namespace tunum::_fmpint_impl
         bool is_zero_op_r_l;
         bool is_zero_op_r_u;
 
-        constexpr arithmetic(const fi& op_l, const fi& op_r)
+        constexpr arithmetic(const fi& op_l, const fi& op_r) noexcept
             : op_l(op_l)
             , op_r(op_r)
             , is_zero_op_l_l(!op_l.lower)
@@ -161,10 +161,12 @@ namespace tunum::_fmpint_impl
                 // 組み込みの演算子使えるならそっち優先
                 return fi{std::uint64_t{op_l} / std::uint64_t{op_r}};
             else {
+                const auto opr_l_bit_op = bit_operator{op_l};
+                const auto opr_r_bit_op = bit_operator{op_r};
                 // 両側の0ビットを除去したビット幅がより小さい型でも計算可能な際はそちらへ処理を委譲
                 if (
-                    const auto min_zero_r_cnt = (std::min)(op_l.countr_zero_bit(), op_r.countr_zero_bit());
-                    max_digits2 - (op_l.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
+                    const auto min_zero_r_cnt = (std::min)(opr_l_bit_op.countr_zero_bit(), opr_r_bit_op.countr_zero_bit());
+                    max_digits2 - (opr_l_bit_op.countl_zero_bit() + min_zero_r_cnt) <= max_digits2 / 2
                 ) {
                     const auto _quo = minor_arith{
                         (op_l >> min_zero_r_cnt).lower,
@@ -175,7 +177,7 @@ namespace tunum::_fmpint_impl
 
                 // TODO: v1とv2のbit幅が近い場合は、多分筆算アルゴリズムのほうが多分早いので、そのあたりの最適な分岐点を考える
                 // bit幅の差20は仮
-                return (op_l.get_bit_width() - op_r.get_bit_width() < 20)
+                return (opr_l_bit_op.get_bit_width() - opr_r_bit_op.get_bit_width() < 20)
                     ? div_bit_column()
                     : div_newton();
             }
@@ -185,7 +187,7 @@ namespace tunum::_fmpint_impl
         constexpr fi div_bit_column() noexcept
         {
             // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
-            const std::size_t lshift_cnt = op_l.get_bit_width() - op_r.get_bit_width();
+            const std::size_t lshift_cnt = bit_operator{op_l}.get_bit_width() - bit_operator{op_r}.get_bit_width();
             auto rem = fi{op_l};
             auto quo = fi{};
             for (std::size_t i = 0; i <= lshift_cnt; i++) {
@@ -209,8 +211,8 @@ namespace tunum::_fmpint_impl
         constexpr fi div_newton() noexcept
         {
             using major_arith = arithmetic<(size << 1), Signed>;
-            const int l_bit_width = op_l.get_bit_width();
-            const int r_bit_width = op_r.get_bit_width();
+            const int l_bit_width = bit_operator{op_l}.get_bit_width();
+            const int r_bit_width = bit_operator{op_r}.get_bit_width();
             const int n = l_bit_width + r_bit_width;
             const auto x = calc_reciprocal_by_newton(op_r, n, double_fi{1} << l_bit_width);
 
