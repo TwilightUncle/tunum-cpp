@@ -14,7 +14,7 @@
 // @param char_type string_viewの文字型
 // @param traits string_viewのtraits
 // @param str_literal char型の文字列リテラルを指定すること
-#define TUNUM_MAKE_ANY_TYPE_STR_VIEW(char_type, traits, str_literal) []() -> std::basic_string_view<char_type, traits> { \
+#define TUNUM_MAKE_ANY_TYPE_STR_VIEW(char_type, traits, str_literal) []() noexcept -> std::basic_string_view<char_type, traits> { \
         if constexpr (std::is_same_v<char_type, wchar_t>) return {(L ## str_literal)}; \
         else if constexpr (std::is_same_v<char_type, char8_t>) return {(u8 ## str_literal)}; \
         else if constexpr (std::is_same_v<char_type, char16_t>) return {(u ## str_literal)}; \
@@ -28,7 +28,7 @@ namespace tunum
     // 数値配列の内容を検証  
     // @param base 入力した数値列の進数
     // @param numbers 検査対象の数値列
-    inline constexpr bool validate_numbers(std::size_t base, const TuAnyBaseNumbers auto& numbers)
+    inline constexpr bool validate_numbers(std::size_t base, const TuAnyBaseNumbers auto& numbers) noexcept
     {
         // 格納されている値が該当進数の一桁に収まっているか検証
         for (auto num : numbers)

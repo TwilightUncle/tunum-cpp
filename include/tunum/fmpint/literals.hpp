@@ -37,11 +37,13 @@ namespace tunum::literals
 
     // 符号ありリテラル
     template <char... IntegralLiteral>
-    inline constexpr auto operator"" _fmp() { return _fmpint_impl::make_fmpint<true, IntegralLiteral...>(); }
+    inline constexpr auto operator"" _fmp()
+    { return _fmpint_impl::make_fmpint<true, IntegralLiteral...>(); }
 
     // 符号なしリテラル
     template <char... IntegralLiteral>
-    inline constexpr auto operator"" _ufmp() { return _fmpint_impl::make_fmpint<false, IntegralLiteral...>(); }
+    inline constexpr auto operator"" _ufmp()
+    { return _fmpint_impl::make_fmpint<false, IntegralLiteral...>(); }
 }
 
 #endif

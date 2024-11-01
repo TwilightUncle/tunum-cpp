@@ -16,7 +16,7 @@ namespace tunum
     // @tparam CharT 文字型
     // @param v 数値に変換したい文字
     template <class CharT>
-    inline constexpr auto convert_char_to_num(CharT v)
+    inline constexpr auto convert_char_to_num(CharT v) noexcept
     {
         using traits_t = std::char_traits<CharT>;
         constexpr CharT code_zero = TUNUM_MAKE_ANY_TYPE_STR_VIEW(CharT, traits_t, "0")[0];
@@ -35,7 +35,7 @@ namespace tunum
     // @tparam Traits 文字特性
     // @param base_number 進数
     template <class CharT, class Traits = std::char_traits<CharT>>
-    inline constexpr auto get_literal_prefixes(std::size_t base_number)
+    inline constexpr auto get_literal_prefixes(std::size_t base_number) noexcept
         -> std::array<std::basic_string_view<CharT, Traits>, 2>
     {
         switch (base_number) {
@@ -59,7 +59,7 @@ namespace tunum
 
     // 接頭詞の長さ取得
     // @param base_number 進数
-    inline constexpr std::size_t get_literal_prefix_length(std::size_t base_number)
+    inline constexpr std::size_t get_literal_prefix_length(std::size_t base_number) noexcept
     { return (base_number == 2 || base_number == 16) ? 2 : 0; }
 
     // リテラルの接頭詞から進数を決定

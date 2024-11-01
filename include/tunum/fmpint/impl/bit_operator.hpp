@@ -93,8 +93,10 @@ namespace tunum::_fmpint_impl
         // ビット左ローテーション
         constexpr fi rotate_l(int s) const noexcept
         {
-            if (!s) return opr;
-            if (s < 0) return rotate_r(-s);
+            if (!s)
+                return opr;
+            if (s < 0)
+                return rotate_r(-s);
 
             const auto shift_mod = s % base_data_digits2;
             const auto i_diff = s / base_data_digits2;
@@ -120,19 +122,24 @@ namespace tunum::_fmpint_impl
         }
 
         // 左側に連続している 0 ビットの数を返却
-        constexpr auto countl_zero_bit() const noexcept { return count_continuous_bit(false, true); }
+        constexpr auto countl_zero_bit() const noexcept
+        { return count_continuous_bit(false, true); }
 
         // 左側に連続している 1 ビットの数を返却
-        constexpr auto countl_one_bit() const noexcept { return count_continuous_bit(true, true); }
+        constexpr auto countl_one_bit() const noexcept
+        { return count_continuous_bit(true, true); }
 
         // 右側に連続している 0 ビットの数を返却
-        constexpr auto countr_zero_bit() const noexcept { return count_continuous_bit(false, false); }
+        constexpr auto countr_zero_bit() const noexcept
+        { return count_continuous_bit(false, false); }
 
         // 右側に連続している 1 ビットの数を返却
-        constexpr auto countr_one_bit() const noexcept { return count_continuous_bit(true, false); }
+        constexpr auto countr_one_bit() const noexcept
+        { return count_continuous_bit(true, false); }
 
         // 寝ているビットをカウント
-        constexpr auto count_zero_bit() const noexcept { return bit_operator{~opr}.count_one_bit(); }
+        constexpr auto count_zero_bit() const noexcept
+        { return bit_operator{~opr}.count_one_bit(); }
 
         // 立っているビットをカウント
         constexpr auto count_one_bit() const noexcept
@@ -179,7 +186,8 @@ namespace tunum::_fmpint_impl
         }
 
         // 格納値を表現するのに必要なビット幅を返却
-        constexpr auto get_bit_width() const noexcept { return max_digits2 - countl_zero_bit(); }
+        constexpr auto get_bit_width() const noexcept
+        { return max_digits2 - countl_zero_bit(); }
 
         // 指定位置のビットを取得
         constexpr bool get_bit(std::size_t i) const noexcept
@@ -190,10 +198,12 @@ namespace tunum::_fmpint_impl
         }
 
         // 先頭ビットを取得
-        constexpr bool get_front_bit() const noexcept { return get_bit(0); }
+        constexpr bool get_front_bit() const noexcept
+        { return get_bit(0); }
 
         // 最後尾ビットを取得
-        constexpr bool get_back_bit() const noexcept { return get_bit(max_digits2 - 1); }
+        constexpr bool get_back_bit() const noexcept
+        { return get_bit(max_digits2 - 1); }
 
         // 指定位置のビットを変更
         constexpr auto change_bit(std::size_t i, bool value) const noexcept

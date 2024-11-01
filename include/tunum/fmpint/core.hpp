@@ -168,19 +168,25 @@ namespace tunum
         }
 
         // 内部表現のうち一番小さい値の要素にアクセス
-        constexpr const base_data_t& front() const noexcept { return this->at(0); }
-        constexpr base_data_t& front() noexcept { return this->at(0); }
+        constexpr const base_data_t& front() const noexcept
+        { return this->at(0); }
+        constexpr base_data_t& front() noexcept
+        { return this->at(0); }
 
         // 内部表現のうち一番大きい値の要素にアクセス
-        constexpr const base_data_t& back() const noexcept { return this->at(data_length - 1); }
-        constexpr base_data_t& back() noexcept { return this->at(data_length - 1); }
+        constexpr const base_data_t& back() const noexcept
+        { return this->at(data_length - 1); }
+        constexpr base_data_t& back() noexcept
+        { return this->at(data_length - 1); }
 
         // -------------------------------------------
         // 演算子オーバーロード
         // -------------------------------------------
 
-        constexpr const base_data_t& operator[](std::size_t n) const { return _at(this, n); }
-        constexpr base_data_t& operator[](std::size_t n) { return _at(this, n); }
+        constexpr const base_data_t& operator[](std::size_t n) const
+        { return _at(this, n); }
+        constexpr base_data_t& operator[](std::size_t n)
+        { return _at(this, n); }
 
         // 組み込み整数へのキャスト
         constexpr explicit operator std::uint64_t() const noexcept
@@ -188,9 +194,12 @@ namespace tunum
             return (std::uint64_t{(*this)[1]} << base_data_digits2)
                 | std::uint64_t{(*this)[0]};
         }
-        constexpr explicit operator std::uint32_t() const noexcept { return this->front(); }
-        constexpr explicit operator std::uint16_t() const noexcept { return std::uint16_t{this->front()}; }
-        constexpr explicit operator std::uint8_t() const noexcept { return std::uint8_t{this->front()}; }
+        constexpr explicit operator std::uint32_t() const noexcept
+        { return this->front(); }
+        constexpr explicit operator std::uint16_t() const noexcept
+        { return std::uint16_t{this->front()}; }
+        constexpr explicit operator std::uint8_t() const noexcept
+        { return std::uint8_t{this->front()}; }
 
         // bool キャスト
         constexpr explicit operator bool() const noexcept
@@ -200,7 +209,8 @@ namespace tunum
         }
 
         // 否定
-        constexpr bool operator!() const noexcept { return !static_cast<bool>(*this); }
+        constexpr bool operator!() const noexcept
+        { return !static_cast<bool>(*this); }
 
         // ビット反転
         constexpr auto operator~() const noexcept
@@ -245,7 +255,8 @@ namespace tunum
         }
 
         // 単項+
-        constexpr auto operator+() const noexcept { return fmpint{*this}; }
+        constexpr auto operator+() const noexcept
+        { return fmpint{*this}; }
 
         // 単項-
         constexpr auto operator-() const noexcept
@@ -255,27 +266,36 @@ namespace tunum
         }
 
         // 加算代入
-        constexpr auto& operator+=(const TuIntegral auto& v) noexcept { return *this = get_arithmetic(v).add(); }
+        constexpr auto& operator+=(const TuIntegral auto& v) noexcept
+        { return *this = get_arithmetic(v).add(); }
 
         // 減算代入
-        constexpr auto& operator-=(const TuIntegral auto& v) noexcept { return *this += -fmpint{v}; }
+        constexpr auto& operator-=(const TuIntegral auto& v) noexcept
+        { return *this += -fmpint{v}; }
 
         // 乗算代入
-        constexpr auto& operator*=(const TuIntegral auto& v) noexcept { return *this = get_arithmetic(v).mul(); }
+        constexpr auto& operator*=(const TuIntegral auto& v) noexcept
+        { return *this = get_arithmetic(v).mul(); }
 
         // 除算代入
-        constexpr auto& operator/=(const TuIntegral auto& v) { return *this = get_arithmetic(v).div(); }
+        constexpr auto& operator/=(const TuIntegral auto& v)
+        { return *this = get_arithmetic(v).div(); }
     
         // 剰余代入
-        constexpr auto& operator%=(const TuIntegral auto& v) { return *this -= (v * (*this / v)); }
+        constexpr auto& operator%=(const TuIntegral auto& v)
+        { return *this -= (v * (*this / v)); }
 
         // 前後インクリメント
-        constexpr auto& operator++() noexcept { return *this += 1;}
-        constexpr auto operator++(int) noexcept { return std::exchange(*this, ++fmpint{*this}); }
+        constexpr auto& operator++() noexcept
+        { return *this += 1;}
+        constexpr auto operator++(int) noexcept
+        { return std::exchange(*this, ++fmpint{*this}); }
 
         // 前後デクリメント
-        constexpr auto& operator--() noexcept { return *this -= 1;}
-        constexpr auto operator--(int) noexcept { return std::exchange(*this, --fmpint{*this}); }
+        constexpr auto& operator--() noexcept
+        { return *this -= 1;}
+        constexpr auto operator--(int) noexcept
+        { return std::exchange(*this, --fmpint{*this}); }
 
         // -------------------------------------------
         // 演算子等のthis適用済み実装クラス取得
@@ -317,7 +337,8 @@ namespace tunum
         }
 
         // マイナスかどうか判定
-        constexpr bool _is_minus() const noexcept { return Signed && get_bit_operator().get_back_bit(); }
+        constexpr bool _is_minus() const noexcept
+        { return Signed && get_bit_operator().get_back_bit(); }
 
         // 内部表現はそのままに符号なし整数へ変換
         constexpr fmpint<Bytes, false> _to_unsigned() const noexcept
