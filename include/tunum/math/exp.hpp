@@ -89,7 +89,7 @@ namespace tunum::_math_impl
     inline constexpr auto exp(FloatT x) noexcept
     {
         // 標準ライブラリの指数関数がコンパイル時評価可能だったら常に標準ライブラリの実装を使う
-        if constexpr (is_constexpr([] { auto val = std::exp(FloatT{}); }))
+        if constexpr (is_constexpr([] { return std::exp(FloatT{}); }))
             return std::exp(x);
         else {
             if (!std::is_constant_evaluated())
@@ -100,7 +100,7 @@ namespace tunum::_math_impl
 
     struct exp_cpo
     {
-        constexpr auto operator()(auto x) const noexcept
+        constexpr auto operator()(auto x) const
         { return exp(x); }
     };
 }

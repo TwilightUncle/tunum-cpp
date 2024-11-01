@@ -7,14 +7,11 @@
 
 #include <stdexcept>
 
-#include TUNUM_COMMON_INCLUDE(concepts.hpp)
+#include TUNUM_COMMON_INCLUDE(math/abs.hpp)
 #include TUNUM_COMMON_INCLUDE(math/exp.hpp)
 
 namespace tunum
 {
-    // 絶対値取得
-    inline constexpr auto abs(const TuArithmetic auto& v) { return (std::max)(v, -v); }
-
     // 自然対数の近似値算出
     // 参考: https://qiita.com/MilkySaitou/items/614fcbb110cae5b9f797
     // @tparam FloatT 任意の組み込み浮動小数点型
