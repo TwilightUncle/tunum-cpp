@@ -67,6 +67,15 @@ namespace tunum
         { *std::begin(v) } -> std::convertible_to<int>;
         std::end(v);
     };
+
+    // 算術的な関数
+    template <class F, class R, class... Args>
+    concept TuArithmeticInvocable
+        = TuArithmetic<R>
+        && (... && TuArithmetic<Args>)
+        && (... && std::convertible_to<Args, R>)
+        && std::regular_invocable<F, Args...>
+        && std::is_invocable_r_v<R, F, Args...>;
 }
 
 #endif
