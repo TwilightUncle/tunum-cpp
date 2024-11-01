@@ -3,7 +3,7 @@
 
 #include TUNUM_COMMON_INCLUDE(floating.hpp)
 #include TUNUM_COMMON_INCLUDE(number_array.hpp)
-#include TUNUM_COMMON_INCLUDE(fmpint/arithmetic.hpp)
+#include TUNUM_COMMON_INCLUDE(fmpint/impl/arithmetic.hpp)
 
 #include <array>
 #include <stdexcept>
