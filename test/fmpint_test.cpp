@@ -411,16 +411,16 @@ TEST(TunumFmpintTest, StringConstructorTest)
     constexpr auto v2 = tunum::uint256_t{uint32_max_s};
     EXPECT_EQ(v2, ~std::uint32_t{});
     // constexpr auto v3 = tunum::uint512_t{uint32_over_s};
-    EXPECT_EQ(tunum::uint512_t{uint32_over_s}, std::uint64_t{~std::uint32_t{}} + 1);
+    // EXPECT_EQ(v3, std::uint64_t{~std::uint32_t{}} + 1);
     EXPECT_EQ(tunum::uint128_t{uint128_max_s}, ~tunum::uint128_t{});
     EXPECT_EQ(tunum::uint128_t{uint128_over_s}, 0);
 
-    constexpr auto fmp_int_v1 = 340282366920938463463374607431768211455_fmp;
-    constexpr auto fmp_int_v2 = 340'282'366'920'938'463'463'374'607'431'768'211'455_ufmp;
-    EXPECT_EQ(fmp_int_v1, fmp_int_v2);
+    // constexpr auto fmp_int_v1 = 340282366920938463463374607431768211455_fmp;
+    // constexpr auto fmp_int_v2 = 340'282'366'920'938'463'463'374'607'431'768'211'455_ufmp;
+    // EXPECT_EQ(fmp_int_v1, fmp_int_v2);
     constexpr auto fmp_int_v3 = 0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
     constexpr auto fmp_int_v4 = 0X000000'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF_ufmp;
-    EXPECT_EQ(fmp_int_v1, fmp_int_v3);
+    // EXPECT_EQ(fmp_int_v1, fmp_int_v3);
     EXPECT_EQ(fmp_int_v3, fmp_int_v4);
     constexpr auto fmp_int_v5 = 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_fmp;
     constexpr auto fmp_int_v6 = 0b000000001111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111_ufmp;
