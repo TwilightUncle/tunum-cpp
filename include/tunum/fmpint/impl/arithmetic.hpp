@@ -44,14 +44,14 @@ namespace tunum::_fmpint_impl
         // ----------------------------
 
         // 左右オペランドについて、lowerとupperのどちらか片方が必ず0
-        constexpr bool is_not_duplicated()
+        constexpr bool is_not_duplicated() const noexcept
         {
             return is_zero_op_l_l && is_zero_op_r_u
                 || is_zero_op_l_u && is_zero_op_r_l;
         }
 
         // どちらかあるいは、両方ゼロ
-        constexpr bool is_either_zero()
+        constexpr bool is_either_zero() const noexcept
         {
             return is_zero_op_l_l && is_zero_op_l_u
                 || is_zero_op_r_l && is_zero_op_r_u;
@@ -63,7 +63,7 @@ namespace tunum::_fmpint_impl
 
         // 加算
         // @param is_calculated_inv 桁上り判定用のビット反転が計算済みかどうか
-        constexpr fi add(bool is_calculated_inv = false, const fi& inv_op_l = fi{}) noexcept
+        constexpr fi add(bool is_calculated_inv = false, const fi& inv_op_l = fi{}) const noexcept
         {
             // 確実にbitの重複がない場合、論理和を取ることで加算となる
             if (is_not_duplicated() || is_either_zero())
@@ -99,10 +99,10 @@ namespace tunum::_fmpint_impl
 
         // 乗算
         // TODO: FFTによる高速化
-        constexpr double_fi mul() noexcept { return mul_karatsuba(); }
+        constexpr double_fi mul() const noexcept { return mul_karatsuba(); }
 
         // カラツバ法による乗算の実装
-        constexpr double_fi mul_karatsuba() noexcept
+        constexpr double_fi mul_karatsuba() const noexcept
         {
             if (is_either_zero())
                 return double_fi{0};
@@ -146,7 +146,7 @@ namespace tunum::_fmpint_impl
 
         // 除算
         // v1 と v2の差が大きく、両端の連続した0が少ない値ほど計算量も増える
-        constexpr fi div()
+        constexpr fi div() const
         {
             using minor_arith = arithmetic<(size >> 1), Signed>;
             // 重いので計算せずとも自明なものはここではじいておく
@@ -184,7 +184,7 @@ namespace tunum::_fmpint_impl
         }
 
         // 2進数による、筆算のような除算実装
-        constexpr fi div_bit_column() noexcept
+        constexpr fi div_bit_column() const noexcept
         {
             // v1 と v2 の２進数桁数の差より、v2のシフト数を取得
             const std::size_t lshift_cnt = bit_operator{op_l}.get_bit_width() - bit_operator{op_r}.get_bit_width();
@@ -208,7 +208,7 @@ namespace tunum::_fmpint_impl
         // 呼び出し側でbit幅確認の上、オーバーフローが予測される際は_div_bit_columnを呼び出すようにする。
         // ※仮にオーバーフローするような場合を実装したとしても、_div_bit_columnのほうが速い
         // TODO: いい感じの初期値を決定する
-        constexpr fi div_newton() noexcept
+        constexpr fi div_newton() const noexcept
         {
             using major_arith = arithmetic<(size << 1), Signed>;
             const int l_bit_width = bit_operator{op_l}.get_bit_width();
