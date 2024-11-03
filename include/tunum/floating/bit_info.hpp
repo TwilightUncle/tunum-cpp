@@ -26,17 +26,18 @@ namespace tunum
 
     // 浮動小数点型の内部表現解析クラス
     // 基数が2であることを前提として解釈する
-    template <std::size_t ValueBitWidth, std::size_t MantissaBitWidth, TuIntegral auto MaxExponent>
+    template <class T, class LimitsT = std::numeric_limits<T>>
     struct floating_bit_info
     {
-        static constexpr auto bit_width = ValueBitWidth;
-        static constexpr auto mantissa_width = MantissaBitWidth;
-        static constexpr auto max_exponent = MaxExponent;
+        static constexpr auto bit_width = sizeof(T) << 3;
+        // numeric_limitではケチ表現の分、1桁多いためマイナス1
+        static constexpr auto mantissa_width = LimitsT::digits - 1;
+        static constexpr auto max_exponent = LimitsT::max_exponent - 1;
         static constexpr auto max_bit_width = std::bit_ceil(bit_width);
         static constexpr auto data_storeble_bytes = max_bit_width >> 3;
 
         using data_store_t = get_uint_t<data_storeble_bytes>;
-        using exponent_value_t = get_int_t<sizeof(MaxExponent)>;
+        using exponent_value_t = get_int_t<sizeof(max_exponent)>;
 
         // 内部表現抽出用パラメータの制約
         // * 仮数部のビット幅が値のビット幅より小さく、符号部も存在できるようなサイズであること
@@ -63,6 +64,15 @@ namespace tunum
         constexpr floating_bit_info(data_store_t v) noexcept
             : data(v)
         {}
+        // 各種表現ごとに直接指定
+        constexpr floating_bit_info(bool s, exponent_value_t e, data_store_t m, bool is_floating_mantissa = true) noexcept
+        {
+            const auto sign_part = s ? sign_mask : data_store_t{};
+            const auto exponent_part = data_store_t{e + bias(is_floating_mantissa)} << mantissa_width;
+            data = sign_part
+                | (exponent_part & exponent_mask)
+                | (m & mantissa_mask);
+        }
 
         // --------------------------------
         // ビット表現の抽出
@@ -100,6 +110,15 @@ namespace tunum
         // 指数部の全てのビットが立っている
         constexpr bool is_exponent_full() const noexcept
         { return (data & exponent_mask) == exponent_mask; }
+
+        // 指数にかかるバイアスを取得
+        constexpr auto bias(bool is_floating_mantissa = true) const noexcept
+        {
+            const auto b = is_floating_mantissa
+                ? max_exponent
+                : max_exponent + mantissa_width;
+            return exponent_value_t(b);
+        }
 
         // --------------------------------
         // bit表現をもとにデータの種類を判定
@@ -159,13 +178,10 @@ namespace tunum
         // 引数は仮数部を小数点表記した場合の桁数で見るかどうか
         constexpr exponent_value_t exponent(bool is_floating_mantissa = true) const noexcept
         {
-            const auto bias = is_floating_mantissa
-                ? max_exponent
-                : max_exponent + mantissa_width;
             if (is_denormalized())
-                return exponent_value_t(1) - exponent_value_t(bias);
+                return exponent_value_t(1) - bias(is_floating_mantissa);
             if (is_normalized())
-                return exponent_value_t(exponent_bits()) - exponent_value_t(bias);
+                return exponent_value_t(exponent_bits()) - bias(is_floating_mantissa);
             if (is_zero())
                 return 0;
             return 1;
@@ -207,6 +223,33 @@ namespace tunum
             return is_denormalized() || exponent() < 0
                 ? data & sign_mask
                 : (data & ~mantissa_mask) | mantissa_integral_bits();
+        }
+
+        // 最も近い表現可能な値のbit表現を取得
+        // yの符号をみて、取得する値の方向を決める
+        // なお、非正規化数サポート有無による動作の違いがどうなっているかよくわからん
+        constexpr data_store_t nextafter_bits(float y) const noexcept
+        {
+            if (is_zero())
+                return y < 0
+                    ? sign_mask | data_store_t{1}
+                    : data_store_t{1};
+            // dataの符号が負の場合、符号を反転して計算したのち、符号をもとに戻す
+            if (sign() < 0)
+                return sign_mask | floating_bit_info{data & (~sign_mask)}.nextafter_bits(-y);
+
+            const auto delta = y < 0 ? -1 : 1;
+            const auto next_mantissa = mantissa() + delta;
+            // 正規化数はケチ表現で最大ビットが常に付与されるため、mantissa_width + 1からビット幅が変化したとき、指数も変わる
+            // 一方で非正規化数は、最大ビットの付与がなく、正規化数との境界のみで指数が変わる
+            const bool is_change_exponent = is_normalized() && std::bit_width(next_mantissa) != (mantissa_width + 1)
+                || is_denormalized() && std::bit_width(next_mantissa) == (mantissa_width + 1);
+
+            if (is_change_exponent) {
+                const auto result_exp = (exponent_bits() + delta) << mantissa_width;
+                return (data & sign_mask) | (result_exp & exponent_mask) | (next_mantissa & mantissa_mask);
+            }
+            return (data & ~mantissa_mask) | (next_mantissa & mantissa_mask);
         }
     };
 }

@@ -79,9 +79,6 @@ namespace tunum::_math_impl
             }
             return exp_maclaurin(x);
         }
-
-        constexpr auto operator()(auto x) const noexcept
-        { return run(x); }
     };
 
     // -----------------------------------------
@@ -91,10 +88,9 @@ namespace tunum::_math_impl
     template <std::floating_point FloatT>
     inline constexpr auto exp(FloatT x) noexcept
     {
-        return invoke_constexpr{
-            [](FloatT _x) { return std::exp(_x); },
-            std_floating_exp_impl{}
-        }(x);
+        if (!std::is_constant_evaluated())
+            return std::exp(x);
+        return std_floating_exp_impl::run(x);
     }
 
     struct exp_cpo

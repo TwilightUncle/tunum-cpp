@@ -21,35 +21,34 @@ namespace tunum
     /// @param Lambda ラムダ式の内部にて判定対象の式を記述
     /// @note 参考: https://yohhoy.hatenadiary.jp/entry/20230908/p1
     /// TODO: 汎用的なため、tumpへ定義を移動か？
-    template <class Lambda, int = (Lambda{}(), 0)>
-    constexpr bool is_constexpr(Lambda) { return true; }
-    constexpr bool is_constexpr(...) { return false; }
+    // 判定がうまくいかない?ため、いったん使用禁止
+    // template <class Lambda, int = (Lambda{}(), 0)>
+    // constexpr bool is_constexpr(Lambda) { return true; }
+    // constexpr bool is_constexpr(...) { return false; }
 
     // 可能な限りFn1を優先的に実行する
     // コンパイル時にFn1が評価できない場合、代替としてfn2を実行する
-    template <class Fn1, class Fn2>
-    struct invoke_constexpr
-    {
-        static constexpr auto fn1 = Fn1{};
-        static constexpr auto fn2 = Fn2{};
+    // 判定がうまくいかない?ため、いったん使用禁止
+    // template <class Fn1, class Fn2>
+    // struct invoke_constexpr
+    // {
+    //     static constexpr auto fn1 = Fn1{};
+    //     static constexpr auto fn2 = Fn2{};
 
-        constexpr invoke_constexpr(Fn1, Fn2) noexcept {}
+    //     constexpr invoke_constexpr(Fn1, Fn2) noexcept {}
 
-        template <class... Args>
-        constexpr auto operator()(const Args&... args) const
-        {
-            // fn1が定数式評価可能であれば常に、fn1を実行
-            if constexpr (is_constexpr([] { return fn1(Args{}...); }))
-                return fn1(args...);
-            else {
-                // fn2は定数式評価可能でなければならない
-                static_assert(is_constexpr([] { return fn2(Args{}...); }));
-                return std::is_constant_evaluated()
-                    ? fn2(args...)
-                    : fn1(args...);
-            }
-        }
-    };
+    //     template <class... Args>
+    //     requires (!std::is_constant_evaluated() || is_constexpr([] { return fn1(Args{}...); }))
+    //     constexpr auto operator()(const Args&... args) const
+    //     { return fn1(args...); }
+
+    //     template <class... Args>
+    //     constexpr auto operator()(const Args&... args) const
+    //     {
+    //         static_assert(is_constexpr([] { return fn2(Args{}...); }));
+    //         return fn2(args...);
+    //     }
+    // };
 
     // 前方宣言
     template <std::size_t Bytes, bool Signed>
