@@ -49,6 +49,10 @@ namespace tunum
         = std::is_arithmetic_v<T>
         || requires (T v) {
             { -v } -> std::convertible_to<T>;
+            { v += std::declval<T>() } -> std::same_as<T&>;
+            { v -= std::declval<T>() } -> std::same_as<T&>;
+            { v *= std::declval<T>() } -> std::same_as<T&>;
+            { v /= std::declval<T>() } -> std::same_as<T&>;
             { v + std::declval<T>() } -> std::convertible_to<T>;
             { v - std::declval<T>() } -> std::convertible_to<T>;
             { v * std::declval<T>() } -> std::convertible_to<T>;
