@@ -24,6 +24,30 @@ namespace tunum
         constexpr floating_std_info(T v) noexcept
             : parent_t(std::bit_cast<data_store_t, T>(v))
         {}
+
+        // ----------------------------------------------
+        // メンバ関数群
+        // ----------------------------------------------
+
+        constexpr explicit operator T() const noexcept
+        { return std::bit_cast<T, data_store_t>(this->data); }
+
+        // 整数部分取得
+        constexpr T get_integral_part() const noexcept
+        { return std::bit_cast<T, data_store_t>(this->get_integral_part_bits()); }
+
+        // 小数部分取得
+        // bit解釈だとずれが出るため、組み込みの演算を用いて、整数部分を引く
+        constexpr T get_decimal_part() const noexcept
+        {
+            // 無限大は符号部のみ残して、0を返却
+            if (this->is_infinity())
+                return std::bit_cast<T, data_store_t>(this->data & this->sign_mask);
+            // 整数部が存在しないことが自明または、正規化数以外はそのまま値を返却
+            return !this->is_normalized() || this->exponent() < 0
+                ? T(*this)
+                : T(*this) - get_integral_part();
+        }
     };
 }
 

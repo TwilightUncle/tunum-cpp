@@ -16,6 +16,8 @@ TEST(TunumFloatingTest, StdInfoTest)
     constexpr auto info9 = tunum::floating_std_info{.1};
     constexpr auto info10 = tunum::floating_std_info{-1.1};
     constexpr auto info11 = tunum::floating_std_info{float(11)};
+
+    // 各種判定のテスト
     EXPECT_TRUE(info1.is_zero());
     EXPECT_TRUE(info1.sign() > 0);
     EXPECT_FALSE(info1.has_decimal_part());
@@ -49,4 +51,23 @@ TEST(TunumFloatingTest, StdInfoTest)
     EXPECT_TRUE(info11.sign() > 0);
     EXPECT_TRUE(info11.is_normalized());
     EXPECT_FALSE(info11.has_decimal_part());
+
+    // 型キャストおよび、浮動小数点型取得メンバ関数テスト
+    EXPECT_EQ(static_cast<float>(info11), float(11));
+    EXPECT_EQ(info9.get_integral_part(), .0);
+    EXPECT_EQ(info9.get_decimal_part(), .1);
+    EXPECT_EQ(info10.get_integral_part(), double(-1));
+    EXPECT_EQ(info10.get_decimal_part(), double(1. - 1.1));
+    EXPECT_EQ(info11.get_integral_part(), float(11));
+    EXPECT_EQ(info11.get_decimal_part(), .0);
+    EXPECT_TRUE(tunum::floating_std_info{info3.get_integral_part()}.is_nan());
+    EXPECT_TRUE(tunum::floating_std_info{info3.get_decimal_part()}.is_nan());
+    EXPECT_EQ(info5.get_integral_part(), float_limit::infinity());
+    EXPECT_EQ(info5.get_decimal_part(), 0.);
+    EXPECT_EQ(info6.get_integral_part(), -double_limit::infinity());
+    EXPECT_EQ(info6.get_decimal_part(), -0.);
+    EXPECT_EQ(info7.get_integral_part(), 0.);
+    EXPECT_EQ(info7.get_decimal_part(), double_limit::denorm_min());
+    EXPECT_EQ(info8.get_integral_part(), -float(0.));
+    EXPECT_EQ(info8.get_decimal_part(), -float_limit::denorm_min());
 }

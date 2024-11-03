@@ -76,6 +76,23 @@ namespace tunum
         constexpr data_store_t mantissa_bits() const noexcept
         { return data & mantissa_mask; }
 
+        // 仮数部の小数部分bit(正規化数の時のみ有効)
+        constexpr data_store_t mantissa_decimal_bits() const noexcept
+        {
+            // 抽出ビットマスク生成用のm議シフト数取得
+            const auto shiftr_n = (std::max)(
+                0,
+                (std::min)(exponent(), exponent_value_t(mantissa_width))
+            );
+            // 右シフトはあまり使いたくないので、シフト数を左シフトに変換して、マスク生成
+            const auto mask = ~(~data_store_t{} << (mantissa_width - shiftr_n));
+            return mantissa_bits() & mask;
+        }
+
+        // 仮数部の整数部分bit(正規化数の時のみ有効)
+        constexpr data_store_t mantissa_integral_bits() const noexcept
+        { return mantissa_bits() & ~mantissa_decimal_bits(); }
+
         // --------------------------------
         // 実装時の補助関数
         // --------------------------------
@@ -99,6 +116,10 @@ namespace tunum
         // 正規化数かどうか
         constexpr bool is_normalized() const noexcept
         { return !exponent_bits() == is_exponent_full(); }
+
+        // 有限かどうか
+        constexpr bool is_finity() const noexcept
+        { return is_zero() || is_denormalized() || is_normalized(); }
 
         // 無限大かどうか
         constexpr bool is_infinity() const noexcept
@@ -167,13 +188,25 @@ namespace tunum
             if (!is_normalized())
                 return is_denormalized();
 
-            const auto using_mantissa_digits = std::max(
+            const auto using_mantissa_digits = (std::max)(
                 int(mantissa_width) - countr_zero(mantissa_bits()),
                 0
             );
             // 使用中のビット幅よりも指数(左シフト数)が小さいとき、
             // 少数部が存在するものと判定
             return exponent() < using_mantissa_digits;
+        }
+
+        // 整数部分のbit列抽出
+        constexpr data_store_t get_integral_part_bits() const noexcept
+        {
+            // 0を除く有限数以外はそのまま返却
+            if (!is_finity() || is_zero())
+                return data;
+            // 指数が0以下の場合または非正規化数は整数が存在しないので、符号部のみ残して、返却
+            return is_denormalized() || exponent() < 0
+                ? data & sign_mask
+                : (data & ~mantissa_mask) | mantissa_integral_bits();
         }
     };
 }
