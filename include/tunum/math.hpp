@@ -72,18 +72,6 @@ namespace tunum
     // @param n 求める項の数(精度)
     inline constexpr auto log10(auto x, std::size_t n = 0) { return log(10, x, n); }
 
-    // 小数点以下切り捨て
-    inline constexpr auto floor(std::floating_point auto v) { return static_cast<std::int64_t>(v); }
-
-    // 小数点以下切り上げ
-    inline constexpr auto ceil(std::floating_point auto v)
-    {
-        const auto floored = tunum::floor(v);
-        return floored < v
-            ? floored + 1
-            : floored;
-    }
-
     namespace numbers
     {
         // ---------------------------

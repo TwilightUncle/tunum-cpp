@@ -106,6 +106,65 @@ namespace tunum::_math_impl
         return nextafter(x, y);
     }
 
+    // ceil内での呼び出しが認識されるように、宣言
+    template <std::floating_point T>
+    inline constexpr T floor(T x) noexcept;
+
+    template <std::floating_point T>
+    inline constexpr T ceil(T x) noexcept
+    {
+        if (!std::is_constant_evaluated())
+            return std::ceil(x);
+        const auto info = floating_std_info{x};
+        return x < 0
+            ? -floor(-x)
+            : info.get_integral_part() + T(info.has_decimal_part());
+    }
+
+    inline constexpr double ceil(std::integral auto x) noexcept
+    { return ceil(double(x)); }
+
+    template <std::floating_point T>
+    inline constexpr T floor(T x) noexcept
+    {
+        if (!std::is_constant_evaluated())
+            return std::floor(x);
+        return x < 0
+            ? -ceil(-x)
+            : floating_std_info{x}.get_integral_part();
+    }
+
+    inline constexpr double floor(std::integral auto x) noexcept
+    { return floor(double(x)); }
+
+    template <std::floating_point T>
+    inline constexpr T trunc(T x) noexcept
+    {
+        if (!std::is_constant_evaluated())
+            return std::trunc(x);
+        return x < 0
+            ? ceil(x)
+            : floor(x);
+    }
+
+    inline constexpr double trunc(std::integral auto x) noexcept
+    { return trunc(double(x)); }
+
+    template <std::floating_point T>
+    inline constexpr T round(T x) noexcept
+    {
+        if (!std::is_constant_evaluated())
+            return std::round(x);
+        const auto abs_x = copysign(x, T{1});
+        const auto abs_result = floating_std_info{abs_x}.get_decimal_part() < T{0.5}
+            ? floor(abs_x)
+            : ceil(abs_x);
+        return copysign(abs_result, x);
+    }
+
+    inline constexpr double round(std::integral auto x) noexcept
+    { return round(double(x)); }
+
     // -------------------------------------------
     // cpo
     // -------------------------------------------
@@ -173,6 +232,30 @@ namespace tunum::_math_impl
         constexpr T operator()(T x, T y) const
         { return nexttoward(x, y); }
     };
+
+    struct ceil_cpo
+    {
+        constexpr auto operator()(auto x) const
+        { return ceil(x); }
+    };
+
+    struct floor_cpo
+    {
+        constexpr auto operator()(auto x) const
+        { return floor(x); }
+    };
+
+    struct trunc_cpo
+    {
+        constexpr auto operator()(auto x) const
+        { return trunc(x); }
+    };
+
+    struct round_cpo
+    {
+        constexpr auto operator()(auto x) const
+        { return round(x); }
+    };
 }
 
 namespace tunum
@@ -225,6 +308,22 @@ namespace tunum
     // @param from 元の値
     // @param to 取得する値の方向
     inline constexpr _math_impl::nexttoward_cpo nexttoward{};
+
+    // 天井関数
+    // @param x
+    inline constexpr _math_impl::ceil_cpo ceil{};
+
+    // 床関数
+    // @param x
+    inline constexpr _math_impl::floor_cpo floor{};
+
+    // 0方向への丸め
+    // @param x
+    inline constexpr _math_impl::trunc_cpo trunc{};
+
+    // 四捨五入
+    // @param x
+    inline constexpr _math_impl::round_cpo round{};
 }
 
 #endif
