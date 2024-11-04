@@ -226,19 +226,16 @@ namespace tunum
         }
 
         // 最も近い表現可能な値のbit表現を取得
-        // yの符号をみて、取得する値の方向を決める
         // なお、非正規化数サポート有無による動作の違いがどうなっているかよくわからん
-        constexpr data_store_t nextafter_bits(float y) const noexcept
+        // @param is_direction_plus 真の場合、大きいほうの隣接値、偽の場合小さいほうの隣接値
+        constexpr data_store_t next_bits(bool is_direction_plus) const noexcept
         {
-            if (is_zero())
-                return y < 0
-                    ? sign_mask | data_store_t{1}
-                    : data_store_t{1};
-            // dataの符号が負の場合、符号を反転して計算したのち、符号をもとに戻す
-            if (sign() < 0)
-                return sign_mask | floating_bit_info{data & (~sign_mask)}.nextafter_bits(-y);
+            // 0をマイナス方向に移動させる場合または、dataの符号が負の場合は、方向を反転して計算
+            // ※整数と違い、画一的に計算できない
+            if (sign() < 0 || is_zero() && !is_direction_plus)
+                return sign_mask | floating_bit_info{data & (~sign_mask)}.next_bits(!is_direction_plus);
 
-            const auto delta = y < 0 ? -1 : 1;
+            const auto delta = is_direction_plus ? 1 : -1;
             const auto next_mantissa = mantissa() + delta;
             // 正規化数はケチ表現で最大ビットが常に付与されるため、mantissa_width + 1からビット幅が変化したとき、指数も変わる
             // 一方で非正規化数は、最大ビットの付与がなく、正規化数との境界のみで指数が変わる

@@ -55,10 +55,15 @@ namespace tunum
         // 隣接するbit表現の値を取得
         constexpr T nextafter(T y) const
         {
-            const auto result = floating_std_info{this->nextafter_bits(y)};
-            if (!result.is_finity())
-                throw std::range_error("FE_INEXACT | FE_OVERFLOW");
-            return (T)result;
+            const auto x = T(*this);
+            // 入力が等しい場合はそのままのyを返却
+            if (x == y)
+                return y;
+            if (this->is_nan() || this->is_infinity())
+                return x;
+            if (floating_std_info{y}.is_nan())
+                return y;
+            return (T)floating_std_info{this->next_bits(x < y)};
         }
     };
 }
