@@ -1,8 +1,8 @@
 #ifndef TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_BIT_INFO_HPP
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_BIT_INFO_HPP
 
+#include <cmath>
 #include TUNUM_COMMON_INCLUDE(bit.hpp)
-#include TUNUM_COMMON_INCLUDE(floating/kind.hpp)
 
 namespace tunum
 {
@@ -17,7 +17,7 @@ namespace tunum
         { v.is_normalized() } -> std::convertible_to<bool>;
         { v.is_infinity() } -> std::convertible_to<bool>;
         { v.is_nan() } -> std::convertible_to<bool>;
-        { v.get_value_kind() } -> std::convertible_to<floating_value_kind>;
+        { v.get_fpclass() } -> std::convertible_to<int>;
         { v.sign() } -> std::convertible_to<int>;
         { v.exponent() } -> std::convertible_to<typename T::exponent_value_t>;
         { v.mantissa() } -> std::convertible_to<typename T::data_store_t>;
@@ -149,17 +149,17 @@ namespace tunum
         { return is_exponent_full() && static_cast<bool>(mantissa_bits()); }
 
         // 保持している値の種類を示す列挙体返却
-        constexpr auto get_value_kind() const noexcept
+        constexpr auto get_fpclass() const noexcept
         {
             if (is_zero())
-                return floating_value_kind::ZERO;
+                return FP_ZERO;
             if (is_normalized())
-                return floating_value_kind::NORM;
+                return FP_NORMAL;
             if (is_denormalized())
-                return floating_value_kind::DENORM;
+                return FP_SUBNORMAL;
             return is_infinity()
-                ? floating_value_kind::INF
-                : floating_value_kind::NAN_;
+                ? FP_INFINITE
+                : FP_NAN;
         }
 
         // --------------------------------

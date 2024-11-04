@@ -440,11 +440,11 @@ namespace tunum
         // 浮動小数点型よりオブジェクト生成
         static constexpr auto _make_by_floating_info(FloatingInfomation auto& v, TuArithmetic auto& original)
         {
-            switch (v.get_value_kind()) {
-                case floating_value_kind::INF:
-                case floating_value_kind::NAN_:
+            switch (v.get_fpclass()) {
+                case FP_INFINITE:
+                case FP_NAN:
                     return ~fmpint{};
-                case floating_value_kind::ZERO:
+                case FP_ZERO:
                     return fmpint{};
                 default:
                     break;
