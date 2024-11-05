@@ -87,7 +87,9 @@ namespace tunum
                 return infinity_bits(signbit);
 
             const auto sign_part = signbit * sign_mask;
-            const auto exponent_part = static_cast<data_store_t>(exp + bias()) << mantissa_width;
+            // ここが負の値になると、data_store_tキャスト時に値がおかしくなるため、maxで補正
+            const auto nonbias_exponent = (std::max)(0, exp + bias());
+            const auto exponent_part = static_cast<data_store_t>(nonbias_exponent) << mantissa_width;
             return sign_part
                 | (exponent_part & exponent_mask)
                 | (mantissa & mantissa_mask); 

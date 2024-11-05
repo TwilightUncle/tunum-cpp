@@ -43,6 +43,13 @@ namespace tunum
                 ? y
                 : (T)this->next(y - T(*this));
         }
+
+        constexpr T ldexp(int exp) const noexcept
+        { return (T)this->add_exponent(exp); }
+
+        // 2の累乗関数(引数は整数のみバージョン)
+        static constexpr T exp2_integral(int x) noexcept
+        { return (T)floating_std_info{T{1}}.add_exponent(x); }
     };
 
     // gccで親クラスのコンストラクタの型推論してくれなかったので、推論補助

@@ -70,4 +70,15 @@ TEST(TunumFloatingTest, StdInfoTest)
     EXPECT_EQ(info7.get_decimal_part(), double_limit::denorm_min());
     EXPECT_EQ(info8.get_integral_part(), -float(0.));
     EXPECT_EQ(info8.get_decimal_part(), -float_limit::denorm_min());
+
+    // 整数乗専用のexp2
+    EXPECT_EQ(info1.exp2_integral(0), 1 << 0);
+    EXPECT_EQ(info1.exp2_integral(1), 1 << 1);
+    EXPECT_EQ(info1.exp2_integral(2), 1 << 2);
+    EXPECT_EQ(info1.exp2_integral(63), 1ull << 63);
+    EXPECT_EQ(info1.exp2_integral(64), std::exp2(64.));
+    EXPECT_EQ(info1.exp2_integral(-64), std::exp2(-64.));
+    // オーバーフロー、アンダーフローの挙動チェック
+    EXPECT_EQ(info1.exp2_integral(10000), std::exp2(10000.));
+    EXPECT_EQ(info1.exp2_integral(-10000), std::exp2(-10000.));
 }
