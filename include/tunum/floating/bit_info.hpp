@@ -57,26 +57,44 @@ namespace tunum
         data_store_t data = {};
 
         // --------------------------------
-        // コンストラクタ
+        // コンストラクタ、演算子等
         // --------------------------------
 
         constexpr floating_bit_info() = default;
         constexpr floating_bit_info(data_store_t v) noexcept
             : data(v)
         {}
-        // 各種表現ごとに直接指定
-        constexpr floating_bit_info(bool s, exponent_value_t e, data_store_t m, bool is_floating_mantissa = true) noexcept
-        {
-            const auto sign_part = s ? sign_mask : data_store_t{};
-            const auto exponent_part = data_store_t{e + bias(is_floating_mantissa)} << mantissa_width;
-            data = sign_part
-                | (exponent_part & exponent_mask)
-                | (m & mantissa_mask);
-        }
+        // 解析対象型による直接のオブジェクト構築
+        constexpr floating_bit_info(T v) noexcept
+            : data(std::bit_cast<data_store_t, T>(v))
+        {}
+        constexpr floating_bit_info(bool signbit, exponent_value_t exp, data_store_t mantissa) noexcept
+            : data(make_direct_bits(signbit, exp, mantissa))
+        {}
+
+        constexpr explicit operator T() const noexcept
+        { return std::bit_cast<T, data_store_t>(this->data); }
 
         // --------------------------------
         // ビット表現の抽出
         // --------------------------------
+
+        // 符号ビット、指数、仮数部のビット列を直接指定してデータ作成
+        static constexpr data_store_t make_direct_bits(bool signbit, exponent_value_t exp, data_store_t mantissa) noexcept
+        {
+            // 指数の最大値超過の場合無限大
+            if (exp > max_exponent)
+                return infinity_bits(signbit);
+
+            const auto sign_part = signbit * sign_mask;
+            const auto exponent_part = static_cast<data_store_t>(exp + bias()) << mantissa_width;
+            return sign_part
+                | (exponent_part & exponent_mask)
+                | (mantissa & mantissa_mask); 
+        }
+
+        static constexpr data_store_t infinity_bits(bool signbit) noexcept
+        { return (sign_mask * signbit) | exponent_mask; }
 
         // 指数部のビット表現
         constexpr data_store_t exponent_bits() const noexcept
@@ -112,7 +130,7 @@ namespace tunum
         { return (data & exponent_mask) == exponent_mask; }
 
         // 指数にかかるバイアスを取得
-        constexpr auto bias(bool is_floating_mantissa = true) const noexcept
+        static constexpr auto bias(bool is_floating_mantissa = true) noexcept
         {
             const auto b = is_floating_mantissa
                 ? max_exponent
@@ -162,40 +180,7 @@ namespace tunum
                 : FP_NAN;
         }
 
-        // --------------------------------
-        // 具体的な値を取得
-        // --------------------------------
-
-        // 符号取得(1 or -1)
-        constexpr int sign() const noexcept
-        {
-            return static_cast<bool>(data & sign_mask)
-                ? -1
-                : 1;
-        }
-
-        // 指数
-        // 引数は仮数部を小数点表記した場合の桁数で見るかどうか
-        constexpr exponent_value_t exponent(bool is_floating_mantissa = true) const noexcept
-        {
-            if (is_denormalized())
-                return exponent_value_t(1) - bias(is_floating_mantissa);
-            if (is_normalized())
-                return exponent_value_t(exponent_bits()) - bias(is_floating_mantissa);
-            if (is_zero())
-                return 0;
-            return 1;
-        }
-
-        // 仮数
-        constexpr data_store_t mantissa() const noexcept
-        {
-            if (is_normalized())
-                return mantissa_bits() | (data_store_t{1} << mantissa_width);
-            return mantissa_bits();
-        }
-
-        // 少数部が存在するかどうか
+        // 小数部が存在するかどうか
         constexpr bool has_decimal_part() const noexcept
         {
             // 正規化数以外は自明(あるいは未定義)として、
@@ -213,40 +198,124 @@ namespace tunum
             return exponent() < using_mantissa_digits;
         }
 
-        // 整数部分のbit列抽出
-        constexpr data_store_t get_integral_part_bits() const noexcept
+        // --------------------------------
+        // 内部表現ををデータがわかるように取得
+        // --------------------------------
+
+        // 符号部をマスクしたデータをそのまま抽出
+        constexpr data_store_t sign_raw() const noexcept
+        { return data & sign_mask; }
+
+        // 符号取得(1 or -1)
+        constexpr int sign() const noexcept
+        {
+            return static_cast<bool>(sign_raw())
+                ? -1
+                : 1;
+        }
+
+        // 指数
+        // 引数は仮数部を小数点表記した場合の桁数で見るかどうか
+        constexpr exponent_value_t exponent(bool is_floating_mantissa = true) const noexcept
+        {
+            return is_finity()
+                ? exponent_value_t(exponent_bits()) - bias(is_floating_mantissa)
+                : 1;
+        }
+
+        // 仮数
+        constexpr data_store_t mantissa() const noexcept
+        {
+            return is_normalized()
+                ? mantissa_bits() | (data_store_t{1} << mantissa_width)
+                : mantissa_bits();
+        }
+
+        // --------------------------------
+        // 生成、変更
+        // --------------------------------
+
+        // 同じデータで新規オブジェクト生成
+        constexpr floating_bit_info clone() const noexcept
+        { return {data}; }
+
+        // 符号部のみ変更
+        constexpr floating_bit_info change_sign(bool signbit) const noexcept
+        { return {(signbit * sign_mask) | (data & ~sign_mask)}; }
+
+        // 指数部のみ変更
+        constexpr floating_bit_info change_exponent(exponent_value_t exp) const noexcept
+        {
+            return exp != exponent()
+                ? floating_bit_info{sign() < 0, exp, mantissa_bits()}
+                : clone();
+        }
+
+        // 仮数部のみ変更
+        constexpr floating_bit_info change_mantissa(data_store_t mantissa) const noexcept
+        { return {sign() < 0, exponent(), mantissa}; }
+
+        // 指数部に加算
+        constexpr floating_bit_info add_exponent(exponent_value_t x) const noexcept
+        { return change_exponent(exponent() + x); }
+
+        // 無限大の解釈オブジェクト生成
+        static constexpr floating_bit_info make_infinity(bool signbit) noexcept
+        { return {infinity_bits(signbit)}; }
+
+        // ゼロの解釈オブジェクト生成
+        static constexpr floating_bit_info make_zero(bool signbit) noexcept
+        { return floating_bit_info{}.change_sign(signbit); }
+
+        // 整数部分のみのオブジェクト作成
+        constexpr floating_bit_info make_integral_part() const noexcept
         {
             // 0を除く有限数以外はそのまま返却
             if (!is_finity() || is_zero())
-                return data;
+                return clone();
             // 指数が0以下の場合または非正規化数は整数が存在しないので、符号部のみ残して、返却
             return is_denormalized() || exponent() < 0
-                ? data & sign_mask
-                : (data & ~mantissa_mask) | mantissa_integral_bits();
+                ? make_zero(sign() < 0)
+                : change_mantissa(mantissa_integral_bits());
+        }
+
+        // 小数部分のみのオブジェクト作成
+        constexpr floating_bit_info make_decimal_part() const noexcept
+        {
+            // 無限大は符号部のみ残して、0を返却
+            if (is_infinity())
+                return make_zero(sign() < 0);
+            // 正規化数以外は整数部が存在しないか、nanなのでそのまま値を返却
+            return !is_normalized() || exponent() < 0
+                ? clone()
+                : floating_bit_info{T(*this) - T(make_integral_part())};
         }
 
         // 最も近い表現可能な値のbit表現を取得
         // なお、非正規化数サポート有無による動作の違いがどうなっているかよくわからん
-        // @param is_direction_plus 真の場合、大きいほうの隣接値、偽の場合小さいほうの隣接値
-        constexpr data_store_t next_bits(bool is_direction_plus) const noexcept
+        // @param direction 0の場合そのままの値、正の場合、大きいほうの隣接値、負の場合小さいほうの隣接値
+        constexpr floating_bit_info next(float direction) const noexcept
         {
+            if (!is_finity() || direction == 0)
+                return clone();
+
             // 0をマイナス方向に移動させる場合または、dataの符号が負の場合は、方向を反転して計算
             // ※整数と違い、画一的に計算できない
-            if (sign() < 0 || is_zero() && !is_direction_plus)
-                return sign_mask | floating_bit_info{data & (~sign_mask)}.next_bits(!is_direction_plus);
+            if (sign() < 0 || is_zero() && direction < 0)
+                return change_sign(false)
+                    .next(-direction)
+                    .change_sign(true);
 
-            const auto delta = is_direction_plus ? 1 : -1;
+            const auto delta = direction > 0 ? 1 : -1;
             const auto next_mantissa = mantissa() + delta;
+            const auto next_mantissa_width = std::bit_width(next_mantissa);
+            const auto is_change_mantissa_width = next_mantissa_width != (mantissa_width + 1);
             // 正規化数はケチ表現で最大ビットが常に付与されるため、mantissa_width + 1からビット幅が変化したとき、指数も変わる
             // 一方で非正規化数は、最大ビットの付与がなく、正規化数との境界のみで指数が変わる
-            const bool is_change_exponent = is_normalized() && std::bit_width(next_mantissa) != (mantissa_width + 1)
-                || is_denormalized() && std::bit_width(next_mantissa) == (mantissa_width + 1);
-
-            if (is_change_exponent) {
-                const auto result_exp = (exponent_bits() + delta) << mantissa_width;
-                return (data & sign_mask) | (result_exp & exponent_mask) | (next_mantissa & mantissa_mask);
-            }
-            return (data & ~mantissa_mask) | (next_mantissa & mantissa_mask);
+            // zeroの場合は必ずfalse, infおよびnanで個々の処理が走ってはならない
+            const bool is_change_exponent = is_normalized() == is_change_mantissa_width;
+            return change_mantissa(next_mantissa)
+                .add_exponent(delta * is_change_exponent);
         }
     };
 }
