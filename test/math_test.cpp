@@ -261,6 +261,55 @@ TEST(TunumMathTest, NearIntegralTest)
     EXPECT_EQ(round_12, std::round(-2.5f));
 }
 
+TEST(TunumMathTest, FractionExponentTest)
+{
+    constexpr auto std_modf_arr = [](float value) {
+        auto integral_part = float{};
+        return std::array<float, 2>{std::modf(value, &integral_part), integral_part};
+    };
+
+    constexpr auto modf_arr_01 = tunum::modf_arr(2.f);
+    constexpr auto modf_arr_02 = tunum::modf_arr(-2.f);
+    constexpr auto modf_arr_03 = tunum::modf_arr(2.4f);
+    constexpr auto modf_arr_04 = tunum::modf_arr(-2.4f);
+    constexpr auto modf_arr_05 = tunum::modf_arr(test_values::denorm);
+    constexpr auto modf_arr_06 = tunum::modf_arr(-test_values::denorm);
+    constexpr auto modf_arr_07 = tunum::modf_arr(test_values::zero);
+    constexpr auto modf_arr_08 = tunum::modf_arr(-test_values::zero);
+    constexpr auto modf_arr_09 = tunum::modf_arr(test_values::inf);
+    constexpr auto modf_arr_10 = tunum::modf_arr(-test_values::inf);
+    auto [fe_01, ie_01] = std_modf_arr(2.f);
+    auto [fe_02, ie_02] = std_modf_arr(-2.f);
+    auto [fe_03, ie_03] = std_modf_arr(2.4f);
+    auto [fe_04, ie_04] = std_modf_arr(-2.4f);
+    auto [fe_05, ie_05] = std_modf_arr(test_values::denorm);
+    auto [fe_06, ie_06] = std_modf_arr(-test_values::denorm);
+    auto [fe_07, ie_07] = std_modf_arr(test_values::zero);
+    auto [fe_08, ie_08] = std_modf_arr(-test_values::zero);
+    auto [fe_09, ie_09] = std_modf_arr(test_values::inf);
+    auto [fe_10, ie_10] = std_modf_arr(-test_values::inf);
+    EXPECT_EQ(modf_arr_01[0], fe_01);
+    EXPECT_EQ(modf_arr_02[0], fe_02);
+    EXPECT_EQ(modf_arr_03[0], fe_03);
+    EXPECT_EQ(modf_arr_04[0], fe_04);
+    EXPECT_EQ(modf_arr_05[0], fe_05);
+    EXPECT_EQ(modf_arr_06[0], fe_06);
+    EXPECT_EQ(modf_arr_07[0], fe_07);
+    EXPECT_EQ(modf_arr_08[0], fe_08);
+    EXPECT_EQ(modf_arr_09[0], fe_09);
+    EXPECT_EQ(modf_arr_10[0], fe_10);
+    EXPECT_EQ(modf_arr_01[1], ie_01);
+    EXPECT_EQ(modf_arr_02[1], ie_02);
+    EXPECT_EQ(modf_arr_03[1], ie_03);
+    EXPECT_EQ(modf_arr_04[1], ie_04);
+    EXPECT_EQ(modf_arr_05[1], ie_05);
+    EXPECT_EQ(modf_arr_06[1], ie_06);
+    EXPECT_EQ(modf_arr_07[1], ie_07);
+    EXPECT_EQ(modf_arr_08[1], ie_08);
+    EXPECT_EQ(modf_arr_09[1], ie_09);
+    EXPECT_EQ(modf_arr_10[1], ie_10);
+}
+
 TEST(TunumMathTest, MathTest)
 {
     constexpr auto abs_1 = tunum::abs(-1);

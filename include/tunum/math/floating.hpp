@@ -142,9 +142,7 @@ namespace tunum::_math_impl
     {
         if (!std::is_constant_evaluated())
             return std::trunc(x);
-        return x < 0
-            ? ceil(x)
-            : floor(x);
+        return floating_std_info{x}.get_integral_part();
     }
 
     inline constexpr double trunc(std::integral auto x) noexcept
@@ -164,6 +162,22 @@ namespace tunum::_math_impl
 
     inline constexpr double round(std::integral auto x) noexcept
     { return round(double(x)); }
+
+    template <std::floating_point T>
+    inline constexpr T modf(T value, T* iptr) noexcept
+    {
+        if (!std::is_constant_evaluated())
+            return std::modf(value, iptr);
+        *iptr = trunc(value);
+        return floating_std_info{value}.get_decimal_part();
+    }
+
+    template <std::floating_point T>
+    inline constexpr std::array<T, 2> modf_arr(T value) noexcept
+    {
+        auto integral_part = T{};
+        return {modf(value, &integral_part), integral_part};
+    }
 
     // -------------------------------------------
     // cpo
@@ -256,6 +270,20 @@ namespace tunum::_math_impl
         constexpr auto operator()(auto x) const
         { return round(x); }
     };
+
+    struct modf_cpo
+    {
+        template <class T>
+        constexpr T operator()(T value, T* iptr) const
+        { return modf(value, iptr); }
+    };
+
+    struct modf_arr_cpo
+    {
+        template <class T>
+        constexpr std::array<T, 2> operator()(T value) const
+        { return modf_arr(value); }
+    };
 }
 
 namespace tunum
@@ -324,6 +352,18 @@ namespace tunum
     // 四捨五入
     // @param x
     inline constexpr _math_impl::round_cpo round{};
+
+    // 小数部と整数部の分離
+    // @param value
+    // @param iptr
+    inline constexpr _math_impl::modf_cpo modf{};
+
+    // 小数点と整数部の分離
+    // modfとの違いは、整数部を第二引数のポインタで受け取るのではなく、
+    // 小数部と整数部のペアの値の配列を返却するところ。
+    // @param value
+    // @return [fractional_part, integral_part]
+    inline constexpr _math_impl::modf_arr_cpo modf_arr{};
 }
 
 #endif
