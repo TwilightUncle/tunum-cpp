@@ -16,7 +16,12 @@ https://twilightuncle.github.io/tunum-cpp/
 
 ## 使い方
 
-任意の場所に本ライブラリを展開し、プロジェクトのインクルードディレクトリに下記パスを追加してください。
+Gitがインストール済みであるものとします。  
+任意の場所で下記コマンドで本ライブラリを展開します。
+
+- `git clone https://github.com/TwilightUncle/tunum-cpp.git --recursive`
+
+プロジェクトのインクルードディレクトリに下記パスを追加してください。
 
 - `path/to/tunum-cpp/include`
 

@@ -8,8 +8,8 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include <concepts>
 #include <bit>
+#include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 
 namespace tunum
 {
