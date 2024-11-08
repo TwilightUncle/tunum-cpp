@@ -2,7 +2,6 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_MATH_FE_HOLDER_HPP
 
 #include <cfenv>
-// #include <concepts>
 #include TUNUM_COMMON_INCLUDE(floating.hpp)
 
 namespace tunum
@@ -52,6 +51,18 @@ namespace tunum
                 std::fegetexceptflag(&fexcepts, FE_ALL_EXCEPT);
                 // クリア前の例外も含め書き戻す
                 std::fesetexceptflag(&(before_e |= fexcepts), FE_ALL_EXCEPT);
+            }
+            else {
+                // コンパイル時のみ結果についての検証も実施
+                const auto result_info = floating_std_info{value};
+                if (result_info.is_nan())
+                    fexcepts |= FE_INEXACT;
+                if (result_info.is_infinity())
+                    fexcepts |= FE_OVERFLOW;
+                if (result_info.is_denormalized())
+                    fexcepts |= FE_UNDERFLOW;
+                // 結果がゼロの場合も、UNDERFLOWが起こりうるが、
+                // ここで得られる情報では、結果のゼロが例外であるかどうか判定できない
             }
         }
 

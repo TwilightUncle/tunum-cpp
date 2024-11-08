@@ -80,6 +80,10 @@ namespace tunum
         && (... && std::convertible_to<Args, R>)
         && std::regular_invocable<F, Args...>
         && std::is_invocable_r_v<R, F, Args...>;
+
+    // 戻り値の検証を含めた関数
+    template <class F, class R, class... Args>
+    concept TuInvocableR = std::is_invocable_r_v<R, F, Args...>;
 }
 
 #endif
