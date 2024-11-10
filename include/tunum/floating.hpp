@@ -5,6 +5,6 @@
 #define TUNUM_COMMON_INCLUDE(path) <tunum/path>
 #endif
 
-#include TUNUM_COMMON_INCLUDE(floating/std_info.hpp)
+#include TUNUM_COMMON_INCLUDE(floating/deduction_guide.hpp)
 
 #endif

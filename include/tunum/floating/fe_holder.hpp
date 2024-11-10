@@ -112,29 +112,7 @@ namespace tunum
         // アンダーフローが発生しているか
         constexpr bool has_underflow() const noexcept
         { return has_fexcept(FE_UNDERFLOW); }
-
-        // template <std::floating_point U>
-        // constexpr auto add(fe_holder<U> r) const noexcept
-        // {
-        //     auto args_except = fexcepts | r.fexcepts;
-
-        //     if (std::is_constant_evaluated()) {
-        //         const auto infol = floating_std_info{value};
-        //         const auto infor = floating_std_info{x.value};
-        //         // 符号が異なる無限同士の加算(減算)は無効な演算
-        //         if (infol.is_infinity() && infor.is_infinity())
-        //             return  std:: result |= FE_INVALID * (infol.sign() != infor.sign());
-        //     }
-        //     const auto result = fe_holder([] { return value + r.value; });
-        //     result |= fexcepts | r.fexcepts;
-        // }
     };
-
-    // コールバック関数コンストラクタ用の推論補助
-    template <class Lambda, class... Args> 
-    requires (std::invocable<Lambda, Args...>)
-    fe_holder(Lambda, Args...)
-        -> fe_holder<std::invoke_result_t<Lambda, Args...>>;
 }
 
 #endif

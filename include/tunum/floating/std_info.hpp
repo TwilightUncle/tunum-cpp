@@ -51,11 +51,6 @@ namespace tunum
         static constexpr T exp2_integral(int x) noexcept
         { return (T)floating_std_info{T{1}}.add_exponent(x); }
     };
-
-    // gccで親クラスのコンストラクタの型推論してくれなかったので、推論補助
-    template <std::floating_point T>
-    floating_std_info(T v)
-        -> floating_std_info<T, std::numeric_limits<T>>;
 }
 
 #endif
