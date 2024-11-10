@@ -22,18 +22,25 @@ namespace tunum
         // 最大の範囲を持つ型を抽出
         // 関数内での計算は全て、calc_tにキャストの上計算を行う
         using calc_t = tump::mp_max_t<tump::list<ArgsT...>>;
-        using use_fe_holder_t = fe_holder<calc_t>;
+        using fe_holder_t = fe_holder<calc_t>;
+        using info_t = floating_std_info<calc_t>;
+        using validate_result_t = std::tuple<std::fexcept_t, bool, calc_t>;
 
-        static constexpr auto validate_arg_default = [](
-            tump::left_t<floating_std_info<calc_t>&&, ArgsT>...
-        ) {
-            return std::tuple{ std::fexcept_t{}, true, calc_t{} };
+        // パラメータパック展開用calc_t
+        template <class>
+        using to_calc_t = calc_t;
+
+        // パラメータパック展開用info_t
+        template <class>
+        using to_info_move_t = info_t&&;
+
+        // コンストラクタのデフォルト引数
+        static constexpr auto validate_arg_default = [](to_info_move_t<ArgsT>...) {
+            return validate_result_t{ std::fexcept_t{}, true, calc_t{} };
         };
 
-        static constexpr auto check_after_default = [](
-            floating_std_info<calc_t>&&,
-            tump::left_t<floating_std_info<calc_t>&&, ArgsT>...
-        ) {
+        // コンストラクタのデフォルト引数
+        static constexpr auto check_after_default = [](info_t&&, to_info_move_t<ArgsT>...) {
             return std::fexcept_t{};
         };
 
@@ -41,18 +48,9 @@ namespace tunum
         // だが、GCC11でvirtual constexprのオバーライドうまくいかなかったのでコンストラクタで渡すしかない
         // 多態性メンバ関数の判定周りの理解が浅いか？
         template <
-            TuInvocableR<
-                calc_t,
-                tump::left_t<calc_t, ArgsT>...
-            > RunFn,
-            TuInvocableR<
-                std::tuple<std::fexcept_t, bool, calc_t>,
-                tump::left_t<floating_std_info<calc_t>&&, ArgsT>...
-            > ValidateFn,
-            TuInvocableR<
-                std::fexcept_t,
-                floating_std_info<calc_t>&&, tump::left_t<floating_std_info<calc_t>&&, ArgsT>...
-            > CheckAfterFn
+            TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn,
+            TuInvocableR<validate_result_t, to_info_move_t<ArgsT>...> ValidateFn,
+            TuInvocableR<std::fexcept_t, info_t&&, to_info_move_t<ArgsT>...> CheckAfterFn
         >
         constexpr fe_fn(
             const RunFn& run,
@@ -60,10 +58,10 @@ namespace tunum
             const CheckAfterFn& check_after, 
             const fe_holder<ArgsT>&... args
         )
-            : use_fe_holder_t()
+            : fe_holder_t()
         {
             // 事前検証と浮動小数点例外の伝播
-            const auto [e, is_run, result_value] = validate_args(floating_std_info{calc_t{args.value}}...);
+            const auto [e, is_run, result_value] = validate_args(info_t{calc_t{args.value}}...);
             this->fexcepts |= e | (... | args.fexcepts);
 
             // 演算未実施の場合
@@ -73,26 +71,17 @@ namespace tunum
             } 
 
             // メインの機能実行
-            const auto calc_result = use_fe_holder_t([&] { return run(calc_t{args.value}...); } );
+            const auto calc_result = fe_holder_t([&] { return run(calc_t{args.value}...); } );
             this->value = calc_result.value;
 
             // runにより発生した例外と、事後チェックの例外をマージ
             this->fexcepts |= calc_result.fexcepts
-                | check_after(
-                    floating_std_info{this->value},
-                    floating_std_info{calc_t{args.value}}...
-                );
+                | check_after(info_t{this->value}, info_t{calc_t{args.value}}...);
         }
 
         template <
-            TuInvocableR<
-                calc_t,
-                tump::left_t<calc_t, ArgsT>...
-            > RunFn,
-            TuInvocableR<
-                std::tuple<std::fexcept_t, bool, calc_t>,
-                tump::left_t<floating_std_info<calc_t>&&, ArgsT>...
-            > ValidateFn
+            TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn,
+            TuInvocableR<validate_result_t, to_info_move_t<ArgsT>...> ValidateFn
         >
         constexpr fe_fn(
             const RunFn& run,
@@ -102,12 +91,7 @@ namespace tunum
             : fe_fn(run, validate_arg, check_after_default, args...)
         {}
 
-        template <
-            TuInvocableR<
-                calc_t,
-                tump::left_t<calc_t, ArgsT>...
-            > RunFn
-        >
+        template <TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn>
         constexpr fe_fn(
             const RunFn& run,
             const fe_holder<ArgsT>&... args
@@ -120,7 +104,7 @@ namespace tunum
         // // 本メソッドには、std_floating_infoが適用された値が渡されるので、
         // // 定義域など確認する処理を継承先で実装すること
         // // 戻り値は新規で発生する浮動小数点例外(引数から予測可能なもののみ)と演算の実施有無および、演算を未実施の場合の結果
-        // virtual constexpr std::tuple<std::fexcept_t, bool, calc_t> validate_args(tump::left_t<floating_std_info<calc_t>&&, ArgsT>...) const
+        // virtual constexpr validate_result_t validate_args(tump::left_t<info_t&&, ArgsT>...) const
         // { return { std::fexcept_t{}, true, calc_t{} }; };
 
         // // 関数の実装
@@ -136,7 +120,7 @@ namespace tunum
         // // 結果の解析。実装は任意
         // // 最初の引数に計算の結果が、残りの引数に演算のオペランドを受け取る
         // // 減算や除算の結果、アンダーフローによりゼロとなるような場合の検証を行う
-        // virtual constexpr std::fexcept_t check_after(floating_std_info<calc_t>&&, tump::left_t<floating_std_info<calc_t>&&, ArgsT>...)
+        // virtual constexpr std::fexcept_t check_after(info_t&&, tump::left_t<info_t&&, ArgsT>...)
         // { return std::fexcept_t{}; }
     };
 }
