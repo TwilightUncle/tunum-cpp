@@ -265,6 +265,10 @@ namespace tunum
         static constexpr floating_bit_info make_infinity(bool signbit = false) noexcept
         { return {infinity_bits(signbit)}; }
 
+        // Not a numberの解釈オブジェクト生成
+        static constexpr floating_bit_info make_nan(bool signbit = false) noexcept
+        { return make_infinity(signbit).change_mantissa(1); }
+
         // ゼロの解釈オブジェクト生成
         static constexpr floating_bit_info make_zero(bool signbit = false) noexcept
         { return floating_bit_info{}.change_sign(signbit); }

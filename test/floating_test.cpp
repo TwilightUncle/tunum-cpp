@@ -98,3 +98,39 @@ TEST(TunumFloatingTest, StdInfoTest)
     EXPECT_EQ(info1.exp2_integral(10000), std::exp2(10000.));
     EXPECT_EQ(info1.exp2_integral(-10000), std::exp2(-10000.));
 }
+
+TEST(TunumFloatingTest, FeHolderTest)
+{
+    using limit_t = std::numeric_limits<double>;
+    constexpr auto default_info = tunum::floating_std_info{0.};
+
+    // 浮動小数点例外保持型を浮動小数点型への変換を挟まずに解釈オブジェクトへの変換が可能か
+    constexpr auto convert_info = tunum::floating_std_info{
+        tunum::fe_holder{limit_t::infinity()}
+    };
+    EXPECT_TRUE(convert_info.is_infinity());
+
+    // 実行時の浮動小数点例外検出確認
+    if (!std::is_constant_evaluated()) {
+        const auto check_exp_exception = tunum::fe_holder{[] { return std::exp(1000); }};
+        EXPECT_TRUE(check_exp_exception.has_fexcept());
+        EXPECT_TRUE(check_exp_exception.has_inexact());
+        EXPECT_FALSE(check_exp_exception.has_divbyzero());
+        EXPECT_FALSE(check_exp_exception.has_invalid());
+        EXPECT_TRUE(check_exp_exception.has_overflow());
+        EXPECT_FALSE(check_exp_exception.has_underflow());
+
+        // システム変数のリセットや差戻周り
+        std::fexcept_t bef = {};
+        std::fegetexceptflag(&bef, FE_ALL_EXCEPT);
+        const auto expect_non_exception = tunum::fe_holder{[] { return 1. + 1.; }};
+        std::fexcept_t af = {};
+        std::fegetexceptflag(&af, FE_ALL_EXCEPT);
+        // fe_holderの内部でリセットと差戻を行っているが、その部分が正常か
+        EXPECT_EQ(bef, af);
+        // fe_holderのコンストラクタの計算は例外が発生していないこと
+        EXPECT_FALSE(expect_non_exception.has_fexcept());
+    }
+
+    // コンパイル時の演算子オーバーロード周りと結果の例外チェック
+}
