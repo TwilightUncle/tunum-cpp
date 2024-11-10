@@ -262,12 +262,28 @@ namespace tunum
         { return change_exponent(exponent() + x); }
 
         // 無限大の解釈オブジェクト生成
-        static constexpr floating_bit_info make_infinity(bool signbit) noexcept
+        static constexpr floating_bit_info make_infinity(bool signbit = false) noexcept
         { return {infinity_bits(signbit)}; }
 
         // ゼロの解釈オブジェクト生成
-        static constexpr floating_bit_info make_zero(bool signbit) noexcept
+        static constexpr floating_bit_info make_zero(bool signbit = false) noexcept
         { return floating_bit_info{}.change_sign(signbit); }
+
+        // 非正規化数の最小値の解釈オブジェクト生成
+        static constexpr floating_bit_info make_denormalized_min(bool signbit = false) noexcept
+        { return floating_bit_info{data_store_t{1}}.change_sign(signbit); }
+
+        // 非正規化数の最大値の解釈オブジェクト生成
+        static constexpr floating_bit_info make_denormalized_max(bool signbit = false) noexcept
+        { return {~make_infinity(!signbit).data}; }
+
+        // 正規化数最小値の解釈オブジェクト生成
+        static constexpr floating_bit_info make_min(bool signbit = false) noexcept
+        { return {make_denormalized_max(signbit).data + 1}; }
+
+        // 正規化数最大値の解釈オブジェクト生成
+        static constexpr floating_bit_info make_max(bool signbit = false) noexcept
+        { return {~make_min(!signbit).data}; }
 
         // 整数部分のみのオブジェクト作成
         constexpr floating_bit_info make_integral_part() const noexcept

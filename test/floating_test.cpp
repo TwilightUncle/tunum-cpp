@@ -71,6 +71,22 @@ TEST(TunumFloatingTest, StdInfoTest)
     EXPECT_EQ(info8.get_integral_part(), -float(0.));
     EXPECT_EQ(info8.get_decimal_part(), -float_limit::denorm_min());
 
+    // 生成系
+    constexpr auto zero_info = info1.make_zero();
+    constexpr auto inf_info = info1.make_infinity(true);
+    constexpr auto denorm_min = info1.make_denormalized_min();
+    constexpr auto denorm_max = info1.make_denormalized_max(true);
+    constexpr auto norm_min = info1.make_min(true);
+    constexpr auto norm_max = info1.make_max();
+    EXPECT_EQ((double)zero_info, 0);
+    EXPECT_EQ((double)inf_info, -double_limit::infinity());
+    EXPECT_TRUE(denorm_min.is_denormalized());
+    EXPECT_TRUE(denorm_max.is_denormalized());
+    EXPECT_GT(-(double)denorm_max, (double)denorm_min);
+    EXPECT_EQ(-(double)denorm_max + (double)denorm_min, -(double)norm_min);
+    EXPECT_EQ((double)norm_min, -double_limit::min());
+    EXPECT_EQ((double)norm_max, double_limit::max());
+
     // 整数乗専用のexp2
     EXPECT_EQ(info1.exp2_integral(0), 1 << 0);
     EXPECT_EQ(info1.exp2_integral(1), 1 << 1);
