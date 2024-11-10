@@ -1,10 +1,9 @@
-#ifndef TUNUM_INCLUDE_GUARD_TUNUM_MATH_FE_FN_HPP
-#define TUNUM_INCLUDE_GUARD_TUNUM_MATH_FE_FN_HPP
+#ifndef TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_FN_HPP
+#define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_FN_HPP
 
 #include <cfenv>
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
-#include TUNUM_COMMON_INCLUDE(floating.hpp)
-#include TUNUM_COMMON_INCLUDE(math/fe_holder.hpp)
+#include TUNUM_COMMON_INCLUDE(floating/fe_holder.hpp)
 
 namespace tunum
 {
@@ -22,6 +21,7 @@ namespace tunum
         // 最大の範囲を持つ型を抽出
         // 関数内での計算は全て、calc_tにキャストの上計算を行う
         using calc_t = tump::mp_max_t<tump::list<ArgsT...>>;
+        using limits_t = std::numeric_limits<calc_t>;
         using fe_holder_t = fe_holder<calc_t>;
         using info_t = floating_std_info<calc_t>;
         using validate_result_t = std::tuple<std::fexcept_t, bool, calc_t>;

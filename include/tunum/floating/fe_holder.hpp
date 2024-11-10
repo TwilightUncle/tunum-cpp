@@ -1,8 +1,8 @@
-#ifndef TUNUM_INCLUDE_GUARD_TUNUM_MATH_FE_HOLDER_HPP
-#define TUNUM_INCLUDE_GUARD_TUNUM_MATH_FE_HOLDER_HPP
+#ifndef TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_HOLDER_HPP
+#define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_HOLDER_HPP
 
 #include <cfenv>
-#include TUNUM_COMMON_INCLUDE(floating.hpp)
+#include TUNUM_COMMON_INCLUDE(floating/std_info.hpp)
 
 namespace tunum
 {
@@ -90,7 +90,7 @@ namespace tunum
 
         // 引数で指定された例外が発生しているか判定
         // 特に引数を指定しなければ全ての例外について発生を検査する
-        constexpr bool has_fexcept(int test_flags = FE_ALL_EXCEPT) const noexcept
+        constexpr bool has_fexcept(std::fexcept_t test_flags = FE_ALL_EXCEPT) const noexcept
         { return static_cast<bool>(fexcepts & test_flags); }
 
         // ゼロ除算が発生しているか検査する
@@ -111,7 +111,7 @@ namespace tunum
 
         // アンダーフローが発生しているか
         constexpr bool has_underflow() const noexcept
-        { return has_underflow(FE_UNDERFLOW); }
+        { return has_fexcept(FE_UNDERFLOW); }
 
         // template <std::floating_point U>
         // constexpr auto add(fe_holder<U> r) const noexcept
