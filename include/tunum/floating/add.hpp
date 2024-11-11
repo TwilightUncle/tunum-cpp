@@ -38,7 +38,7 @@ namespace tunum
             // 無限大-無限大は不正な演算とする
             const auto num_of_infinity = parent_t::count_infinity(info1, info2);
             return (num_of_infinity == 2 && info1.sign() != info2.sign())
-                ? validate_result_t{FE_INVALID, false, (calc_t)info_t::make_nan()}
+                ? validate_result_t{FE_INVALID, false, info_t::get_nan()}
                 : validate_result_t{
                     std::fexcept_t{},
                     num_of_infinity == 0,
@@ -53,6 +53,7 @@ namespace tunum
                 return FE_INEXACT | FE_OVERFLOW;
 
             // 結果がゼロなのに、符号をそろえたオペランドが異なる場合アンダーフロー
+            //  ->発生しうるの？
             return (result.is_zero() && (calc_t)arg1 != -(calc_t)arg2)
                 ? FE_INEXACT | FE_UNDERFLOW
                 : parent_t::check_after_default(result, arg1, arg2);

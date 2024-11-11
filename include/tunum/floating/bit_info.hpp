@@ -248,9 +248,14 @@ namespace tunum
         // 指数部のみ変更
         constexpr floating_bit_info change_exponent(exponent_value_t exp) const noexcept
         {
-            return exp != exponent()
-                ? floating_bit_info{sign() < 0, exp, mantissa_bits()}
-                : clone();
+            if (exp == exponent())
+                return clone();
+            const auto nonbias_exp = exp + bias();
+            if (nonbias_exp > 0)
+                return floating_bit_info{sign() < 0, exp, mantissa_bits()};
+
+            const auto shift_r = (std::min)(1 - nonbias_exp, exponent_value_t{bit_width} - 1);
+            return floating_bit_info{sign() < 0, -bias(), mantissa() >> shift_r};
         }
 
         // 仮数部のみ変更
