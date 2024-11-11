@@ -261,7 +261,6 @@ TEST(TunumFloatingTest, AddTest)
     EXPECT_TRUE(udf_2.has_underflow());
 
     // オーバーフロー(本来有限数になるはずだが、型で表現可能な値を逸脱することによる無限大発生)
-    // TODO: gccで定数式の無限大発生が許可されていないようなので、あらかじめオーバーフローが発生するか予測する処理を挟む
     constexpr auto ovf_1 = tunum::add(float_info.get_max(), float_info.get_max());
     EXPECT_TRUE(tunum::floating_std_info{ovf_1}.is_infinity());
     EXPECT_TRUE((float)ovf_1 > 0);
