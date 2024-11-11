@@ -21,27 +21,15 @@ namespace tunum
         constexpr add(const fe_holder<Arg1>& arg1, const fe_holder<Arg2>& arg2)
             : parent_t(fn, validate, check_result, arg1, arg2)
         {}
-        constexpr add(Arg1 arg1, Arg2 arg2)
-            : add(fe_holder{arg1}, fe_holder{arg2})
-        {}
-        constexpr add(std::integral auto arg1, std::integral auto arg2)
-            : add(static_cast<double>(arg1), static_cast<double>(arg2))
-        {}
-        constexpr add(Arg1 arg1, std::integral auto arg2)
-            : add(arg1, static_cast<double>(arg2))
-        {}
-        constexpr add(std::integral auto arg1, Arg2 arg2)
-            : add(static_cast<double>(arg1), arg2)
-        {}
 
         // ---------------------------------------
         // 処理・検証の実装
         // ---------------------------------------
 
-        static constexpr auto fn(calc_t arg1, calc_t arg2)
-        { return arg1 + arg2; }
+        static constexpr auto fn = [](calc_t arg1, calc_t arg2)
+        { return arg1 + arg2; };
 
-        static constexpr validate_result_t validate(info_t&& info1, info_t&& info2)
+        static constexpr auto validate = [](const info_t& info1, const info_t& info2) -> validate_result_t
         {
             const auto [e, is_run, return_value] = parent_t::validate_arg_default(info1, info2);
             if (!is_run)
@@ -56,9 +44,9 @@ namespace tunum
                     num_of_infinity == 0,
                     parent_t::get_first_infinity(info1, info2)
                 };
-        }
+        };
 
-        static constexpr std::fexcept_t check_result(info_t&& result, info_t&& arg1, info_t&& arg2)
+        static constexpr auto check_result = [](const info_t& result, const info_t& arg1, const info_t& arg2) -> std::fexcept_t
         {
             // 有限数と有限数の加算から無限が生じているのでオーバーフロー
             if (result.is_infinity())
@@ -68,7 +56,7 @@ namespace tunum
             return (result.is_zero() && (calc_t)arg1 != -(calc_t)arg2)
                 ? FE_INEXACT | FE_UNDERFLOW
                 : parent_t::check_after_default(result, arg1, arg2);
-        }
+        };
     };
 }
 

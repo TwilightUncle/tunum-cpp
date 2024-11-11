@@ -9,7 +9,8 @@
 #endif
 
 #include <bit>
-#include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
+#include TUNUM_COMMON_INCLUDE(mp/arithmetc_operation_result.hpp)
+#include TUNUM_COMMON_INCLUDE(mp/integral_to_floating.hpp)
 
 namespace tunum
 {

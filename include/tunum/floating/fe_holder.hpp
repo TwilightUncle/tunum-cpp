@@ -6,6 +6,12 @@
 
 namespace tunum
 {
+    // 四則演算のオーバーロード用前方宣言
+    template <std::floating_point Arg1, std::floating_point Arg2> struct add;
+    template <std::floating_point Arg1, std::floating_point Arg2> struct sub;
+    template <std::floating_point Arg1, std::floating_point Arg2> struct mul;
+    template <std::floating_point Arg1, std::floating_point Arg2> struct div;
+
     // 浮動小数点例外を参照可能な算術型
     template <std::floating_point T>
     struct fe_holder
@@ -23,6 +29,12 @@ namespace tunum
         constexpr fe_holder(T v, std::fexcept_t e = {}) noexcept
             : value(v)
             , fexcepts(e)
+        {}
+
+        // 整数型の値より作成
+        // 一様にdouble型へ変換する
+        constexpr fe_holder(std::integral auto v, std::fexcept_t e = {}) noexcept
+            : fe_holder(static_cast<T>(v))
         {}
 
         // 別のfe_holderオブジェクトより生成
@@ -79,6 +91,19 @@ namespace tunum
         constexpr bool operator!() const noexcept
         { return !value; }
 
+        constexpr fe_holder operator+() const noexcept
+        { return {*this}; }
+
+        constexpr fe_holder operator-() const noexcept
+        {
+            auto new_value = +(*this);
+            new_value.value = -value;
+            return new_value;
+        }
+
+        constexpr fe_holder operator+=(const auto& opl) const noexcept
+        { return (*this) = add{*this, opl}; }
+
         // -------------------------------------
         // メンバ関数
         // -------------------------------------
@@ -113,6 +138,29 @@ namespace tunum
         constexpr bool has_underflow() const noexcept
         { return has_fexcept(FE_UNDERFLOW); }
     };
+
+    namespace fn
+    {
+        template <class T>
+        struct get_fe_holder_inner;
+
+        template <std::integral T>
+        struct get_fe_holder_inner<T>
+            : public std::type_identity<double> {};
+        
+        template <std::floating_point T>
+        struct get_fe_holder_inner<T>
+            : public std::type_identity<T> {};
+
+        template <std::floating_point T>
+        struct get_fe_holder_inner<fe_holder<T>>
+            : public std::type_identity<T> {};
+    }
+
+    using get_fe_holder_inner = tump::cbk<fn::get_fe_holder_inner, 1>;
+
+    template <class T>
+    using get_fe_holder_inner_t = typename fn::get_fe_holder_inner<T>::type;
 }
 
 #endif

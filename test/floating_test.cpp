@@ -104,6 +104,18 @@ TEST(TunumFloatingTest, FeHolderTest)
     using limit_t = std::numeric_limits<double>;
     constexpr auto default_info = tunum::floating_std_info{0.};
 
+    // コンストラクタとか推論(型があってればOK)
+    using fe_holder_val_t_1 = decltype(tunum::fe_holder{1.});
+    using fe_holder_val_t_2 = decltype(tunum::fe_holder{1.f, FE_ALL_EXCEPT});
+    using fe_holder_val_t_3 = decltype(tunum::fe_holder{1ull});
+    using fe_holder_val_t_4 = decltype(tunum::fe_holder{1ll, FE_ALL_EXCEPT});
+    using fe_holder_val_t_5 = decltype(tunum::fe_holder{tunum::fe_holder{1., FE_ALL_EXCEPT}});
+    static_assert(std::is_same_v<fe_holder_val_t_1, tunum::fe_holder<double>>);
+    static_assert(std::is_same_v<fe_holder_val_t_2, tunum::fe_holder<float>>);
+    static_assert(std::is_same_v<fe_holder_val_t_3, tunum::fe_holder<double>>);
+    static_assert(std::is_same_v<fe_holder_val_t_4, tunum::fe_holder<double>>);
+    static_assert(std::is_same_v<fe_holder_val_t_5, tunum::fe_holder<double>>);
+
     // 浮動小数点例外保持型を浮動小数点型への変換を挟まずに解釈オブジェクトへの変換が可能か
     constexpr auto convert_info = tunum::floating_std_info{
         tunum::fe_holder{limit_t::infinity()}
@@ -131,6 +143,39 @@ TEST(TunumFloatingTest, FeHolderTest)
         // fe_holderのコンストラクタの計算は例外が発生していないこと
         EXPECT_FALSE(expect_non_exception.has_fexcept());
     }
+}
 
-    // コンパイル時の演算子オーバーロード周りと結果の例外チェック
+TEST(TunumFloatingTest, AddTest)
+{
+    // 型推論と、結果が大きいほうの型に統一されているか
+    constexpr auto add_1 = tunum::add(0.f, tunum::fe_holder{3.3});
+    constexpr auto add_2 = tunum::add(tunum::fe_holder{0.3}, -7);
+    constexpr auto add_3 = tunum::add(2, 8.3f);
+    constexpr auto add_4 = tunum::add(-1, 5ull);
+    static_assert(std::is_same_v<typename decltype(add_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(add_2)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(add_3)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(add_4)::calc_t, float>);
+    EXPECT_EQ((double)add_1, 0.f + 3.3);
+    EXPECT_EQ((double)add_2, 0.3 + -7);
+    EXPECT_EQ((float)add_3, 2 + 8.3f);
+    EXPECT_EQ((float)add_4, 4.f);
+}
+
+TEST(TunumFloatingTest, FeHolderOperatorTest)
+{
+    // 比較
+    // 単項+-
+
+    // 下記算術演算子の細かいテストは専用のテスト関数で行う
+    // ここでは、正常な呼び出しの確認が取れればOK
+
+    // 加算
+
+    // 減算
+
+    // 乗算
+
+    // 除算
+
 }

@@ -33,7 +33,7 @@ namespace tunum
 
         // パラメータパック展開用info_t
         template <class>
-        using to_info_move_t = info_t&&;
+        using to_info_ref_t = const info_t&;
 
         // -------------------------------------------
         // コンストラクタ
@@ -44,8 +44,8 @@ namespace tunum
         // 多態性メンバ関数の判定周りの理解が浅いか？
         template <
             TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn,
-            TuInvocableR<validate_result_t, to_info_move_t<ArgsT>...> ValidateFn,
-            TuInvocableR<std::fexcept_t, info_t&&, to_info_move_t<ArgsT>...> CheckAfterFn
+            TuInvocableR<validate_result_t, to_info_ref_t<ArgsT>...> ValidateFn,
+            TuInvocableR<std::fexcept_t, const info_t&, to_info_ref_t<ArgsT>...> CheckAfterFn
         >
         constexpr fe_fn(
             const RunFn& run,
@@ -96,8 +96,8 @@ namespace tunum
         // ---------------------------------------
 
         // コンストラクタのデフォルト引数
-        // static constexpr auto validate_arg_default = [](to_info_move_t<ArgsT>... infos) {
-        static constexpr auto validate_arg_default(to_info_move_t<ArgsT>... infos)
+        // static constexpr auto validate_arg_default = [](to_info_ref_t<ArgsT>... infos) {
+        static constexpr auto validate_arg_default(to_info_ref_t<ArgsT>... infos)
         {
             // 多分どの関数でも引数にNaNが含まれていたら結果はNaN
             // また、この関数の計算にて発生したNaNではないため、ここでの例外は特になし
@@ -108,7 +108,7 @@ namespace tunum
         }
 
         // コンストラクタのデフォルト引数
-        static constexpr auto check_after_default(info_t&& result_info, to_info_move_t<ArgsT>...)
+        static constexpr auto check_after_default(const info_t& result_info, to_info_ref_t<ArgsT>...)
         {
             return result_info.is_denormalized()
                 ? std::fexcept_t{FE_INEXACT | FE_UNDERFLOW}
@@ -144,20 +144,20 @@ namespace tunum
         // -----------------------------------------------
 
         // infosの中に、NaNが含まれる
-        template <std::floating_point... _ArgsT> 
-        static constexpr bool exsists_nan(to_info_move_t<_ArgsT>... infos) noexcept
+        template <class... InfosT> 
+        static constexpr bool exsists_nan(const InfosT&... infos) noexcept
         { return (... || infos.is_nan()); }
 
         // infosの中に含まれる無限の数をカウント
-        template <std::floating_point... _ArgsT>
-        static constexpr int count_infinity(to_info_move_t<_ArgsT>... infos) noexcept
+        template <class... InfosT>
+        static constexpr int count_infinity(const InfosT&... infos) noexcept
         { return (... + int(infos.is_infinity())); }
 
         // infosの中に含まれる無限のうち、先頭の値を取得
         // ※infoを外したcalc_tの値
         // なければ0
-        template <std::floating_point... _ArgsT>
-        static constexpr calc_t get_first_infinity(to_info_move_t<_ArgsT>... infos) noexcept
+        template <class... InfosT>
+        static constexpr calc_t get_first_infinity(const InfosT&... infos) noexcept
         {
             for (const auto& info : std::array{infos...})
                 if (info.is_infinity())
