@@ -267,7 +267,7 @@ namespace tunum
 
         // Not a numberの解釈オブジェクト生成
         static constexpr floating_bit_info make_nan(bool signbit = false) noexcept
-        { return make_infinity(signbit).change_mantissa(1); }
+        { return {infinity_bits(signbit) | data_store_t{1u}}; }
 
         // ゼロの解釈オブジェクト生成
         static constexpr floating_bit_info make_zero(bool signbit = false) noexcept

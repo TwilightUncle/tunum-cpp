@@ -102,7 +102,7 @@ namespace tunum
             // 多分どの関数でも引数にNaNが含まれていたら結果はNaN
             // また、この関数の計算にて発生したNaNではないため、ここでの例外は特になし
             return exsists_nan(infos...)
-                ? validate_result_t{std::fexcept_t{}, false, (calc_t)info_t::make_nan()}
+                ? validate_result_t{std::fexcept_t{}, false, info_t::get_nan()}
                 // 無限を含む計算は関数によって、結果がNaNや0になることもあるので、継承先で実装を行う
                 : validate_result_t{ std::fexcept_t{}, true, calc_t{} };
         }
