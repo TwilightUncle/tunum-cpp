@@ -110,6 +110,14 @@ TEST(TunumFloatingTest, StdInfoTest)
     constexpr auto border_shift_r_2 = denorm_min.add_exponent(-1);
     EXPECT_EQ((double)border_shift_r_1, (double)norm_min2 / 2);
     EXPECT_EQ((double)border_shift_r_2, (double)denorm_min / 2);
+
+    // 情報落ちを発生させる/させない情報を正確に取れているか
+    constexpr auto half_norm_max_info = tunum::floating_std_info{(double)norm_max / 2};
+    constexpr auto lost_info = half_norm_max_info.make_lost_info_max();
+    constexpr auto not_lost_info = half_norm_max_info.make_non_lost_info_min();
+    EXPECT_EQ((double)half_norm_max_info + (double)lost_info, (double)half_norm_max_info);
+    EXPECT_GT((double)half_norm_max_info + (double)not_lost_info, (double)half_norm_max_info);
+    EXPECT_TRUE(tunum::floating_std_info{(double)half_norm_max_info + (double)not_lost_info}.is_normalized());
 }
 
 TEST(TunumFloatingTest, FeHolderTest)

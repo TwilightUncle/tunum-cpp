@@ -26,6 +26,7 @@ namespace tunum
 
     // 浮動小数点型の内部表現解析クラス
     // 基数が2であることを前提として解釈する
+    // ※もし、独自実装の浮動小数点を設定する場合、丸めモードが一致したい可能性があるので、Limit関連は派生クラスで行ったほうが良いかも
     template <class T, class LimitsT = std::numeric_limits<T>>
     struct floating_bit_info
     {
@@ -293,6 +294,54 @@ namespace tunum
         // 正規化数最大値の解釈オブジェクト生成
         static constexpr floating_bit_info make_max(bool signbit = false) noexcept
         { return {~make_min(!signbit).data}; }
+
+        // 情報落ちする最大の値
+        constexpr floating_bit_info make_lost_info_max(bool signbit = false) const noexcept
+        {
+            // 丸めモードによって境界が異なるので、limitよりfloat_round_styleを取得の上分ける
+            // なお、デフォルトと思われるround_to_nearest以外はテスト未実施
+            // ※丸めモードが確定していない場合は使えない
+            static_assert(LimitsT::round_style != std::float_round_style::round_indeterminate);
+            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_infinity)
+                if (sign() > 0)
+                    return floating_bit_info{};
+            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_neg_infinity)
+                if (sign() < 0)
+                    return floating_bit_info{}.change_sign(true);
+
+            const int exponent_sub = LimitsT::round_style == std::float_round_style::round_to_nearest
+                ? 2
+                : 1;
+            return floating_bit_info{
+                signbit,
+                exponent() - (mantissa_width + exponent_sub),
+                mantissa_mask
+            };
+        }
+
+        // 情報落ちしない最小の値
+        constexpr floating_bit_info make_non_lost_info_min(bool signbit = false) const noexcept
+        {
+            // 丸めモードによって境界が異なるので、limitよりfloat_round_styleを取得の上分ける
+            // なお、デフォルトと思われるround_to_nearest以外はテスト未実施
+            // ※丸めモードが確定していない場合は使えない
+            static_assert(LimitsT::round_style != std::float_round_style::round_indeterminate);
+            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_infinity)
+                if (sign() > 0)
+                    return floating_bit_info{data_store_t{1}};
+            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_neg_infinity)
+                if (sign() < 0)
+                    return floating_bit_info{data_store_t{1}}.change_sign(true);
+
+            const int exponent_sub = LimitsT::round_style == std::float_round_style::round_to_nearest
+                ? 1
+                : 0;
+            return floating_bit_info{
+                signbit,
+                exponent() - (mantissa_width + exponent_sub),
+                0
+            };
+        }
 
         // 整数部分のみのオブジェクト作成
         constexpr floating_bit_info make_integral_part() const noexcept
