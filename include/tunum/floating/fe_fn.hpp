@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_FN_HPP
 
 #include <cfenv>
+#include <array>
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 #include TUNUM_COMMON_INCLUDE(floating/fe_holder.hpp)
 
@@ -34,15 +35,9 @@ namespace tunum
         template <class>
         using to_info_move_t = info_t&&;
 
-        // コンストラクタのデフォルト引数
-        static constexpr auto validate_arg_default = [](to_info_move_t<ArgsT>...) {
-            return validate_result_t{ std::fexcept_t{}, true, calc_t{} };
-        };
-
-        // コンストラクタのデフォルト引数
-        static constexpr auto check_after_default = [](info_t&&, to_info_move_t<ArgsT>...) {
-            return std::fexcept_t{};
-        };
+        // -------------------------------------------
+        // コンストラクタ
+        // -------------------------------------------
 
         // このコンセプトきしょいな
         // だが、GCC11でvirtual constexprのオバーライドうまくいかなかったのでコンストラクタで渡すしかない
@@ -79,10 +74,7 @@ namespace tunum
                 | check_after(info_t{this->value}, info_t{calc_t{args.value}}...);
         }
 
-        template <
-            TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn,
-            TuInvocableR<validate_result_t, to_info_move_t<ArgsT>...> ValidateFn
-        >
+        template <class RunFn, class ValidateFn>
         constexpr fe_fn(
             const RunFn& run,
             const ValidateFn& validate_arg,
@@ -91,13 +83,37 @@ namespace tunum
             : fe_fn(run, validate_arg, check_after_default, args...)
         {}
 
-        template <TuInvocableR<calc_t, to_calc_t<ArgsT>...> RunFn>
+        template <class RunFn>
         constexpr fe_fn(
             const RunFn& run,
             const fe_holder<ArgsT>&... args
         )
             : fe_fn(run, validate_arg_default, args...)
         {}
+
+        // ---------------------------------------
+        // デフォルトの引数・結果検証処理
+        // ---------------------------------------
+
+        // コンストラクタのデフォルト引数
+        // static constexpr auto validate_arg_default = [](to_info_move_t<ArgsT>... infos) {
+        static constexpr auto validate_arg_default(to_info_move_t<ArgsT>... infos)
+        {
+            // 多分どの関数でも引数にNaNが含まれていたら結果はNaN
+            // また、この関数の計算にて発生したNaNではないため、ここでの例外は特になし
+            return exsists_nan(infos...)
+                ? validate_result_t{std::fexcept_t{}, false, (calc_t)info_t::make_nan()}
+                // 無限を含む計算は関数によって、結果がNaNや0になることもあるので、継承先で実装を行う
+                : validate_result_t{ std::fexcept_t{}, true, calc_t{} };
+        }
+
+        // コンストラクタのデフォルト引数
+        static constexpr auto check_after_default(info_t&& result_info, to_info_move_t<ArgsT>...)
+        {
+            return result_info.is_denormalized()
+                ? std::fexcept_t{FE_INEXACT | FE_UNDERFLOW}
+                : std::fexcept_t{};
+        }
 
         // // 引数の検証を行う
         // // 実装は任意
@@ -122,6 +138,32 @@ namespace tunum
         // // 減算や除算の結果、アンダーフローによりゼロとなるような場合の検証を行う
         // virtual constexpr std::fexcept_t check_after(info_t&&, tump::left_t<info_t&&, ArgsT>...)
         // { return std::fexcept_t{}; }
+
+        // -----------------------------------------------
+        // 検証用補助関数
+        // -----------------------------------------------
+
+        // infosの中に、NaNが含まれる
+        template <std::floating_point... _ArgsT> 
+        static constexpr bool exsists_nan(to_info_move_t<_ArgsT>... infos) noexcept
+        { return (... || infos.is_nan()); }
+
+        // infosの中に含まれる無限の数をカウント
+        template <std::floating_point... _ArgsT>
+        static constexpr int count_infinity(to_info_move_t<_ArgsT>... infos) noexcept
+        { return (... + int(infos.is_infinity())); }
+
+        // infosの中に含まれる無限のうち、先頭の値を取得
+        // ※infoを外したcalc_tの値
+        // なければ0
+        template <std::floating_point... _ArgsT>
+        static constexpr calc_t get_first_infinity(to_info_move_t<_ArgsT>... infos) noexcept
+        {
+            for (const auto& info : std::array{infos...})
+                if (info.is_infinity())
+                    return calc_t{info};
+            return calc_t{};
+        }
     };
 }
 
