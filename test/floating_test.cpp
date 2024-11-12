@@ -261,6 +261,7 @@ TEST(TunumFloatingTest, AddTest)
     EXPECT_TRUE(udf_2.has_underflow());
 
     // オーバーフロー(本来有限数になるはずだが、型で表現可能な値を逸脱することによる無限大発生)
+    // もうちょい境界チェックしたほうが良いかもだがめんどいのでパス。
     constexpr auto ovf_1 = tunum::add(float_info.get_max(), float_info.get_max());
     EXPECT_TRUE(tunum::floating_std_info{ovf_1}.is_infinity());
     EXPECT_TRUE((float)ovf_1 > 0);
@@ -277,6 +278,26 @@ TEST(TunumFloatingTest, AddTest)
     EXPECT_FALSE(ovf_2.has_invalid());
     EXPECT_TRUE(ovf_2.has_overflow());
     EXPECT_FALSE(ovf_2.has_underflow());
+}
+
+TEST(TunumFloatingTest, SubTest)
+{
+    // 加算にて大体の確認はしているため、推論の確認と軽い動作確認
+    // 型推論と、結果が大きいほうの型に統一されているか
+    // 整数同士の計算はfloatになるか
+    constexpr auto sub_1 = tunum::sub(0.f, tunum::fe_holder{3.3});
+    constexpr auto sub_2 = tunum::sub(tunum::fe_holder{0.3}, -7);
+    constexpr auto sub_3 = tunum::sub(2, 8.3f);
+    constexpr auto sub_4 = tunum::sub(-1, 5ull);
+    static_assert(std::is_same_v<typename decltype(sub_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(sub_2)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(sub_3)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(sub_4)::calc_t, float>);
+    EXPECT_EQ((double)sub_1, 0.f - 3.3);
+    EXPECT_EQ((double)sub_2, 0.3 - -7);
+    EXPECT_EQ((float)sub_3, 2 - 8.3f);
+    EXPECT_EQ((float)sub_4, -6.f);
+
 }
 
 TEST(TunumFloatingTest, FeHolderOperatorTest)

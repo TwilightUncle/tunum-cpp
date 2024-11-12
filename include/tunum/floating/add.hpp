@@ -5,7 +5,7 @@
 
 namespace tunum
 {
-    // 加算
+    // 加算(減算の実装も兼ねる)
     template <std::floating_point Arg1, std::floating_point Arg2>
     struct add : public fe_fn<Arg1, Arg2>
     {
