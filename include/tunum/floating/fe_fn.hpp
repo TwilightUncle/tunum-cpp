@@ -3,6 +3,7 @@
 
 #include <cfenv>
 #include <array>
+#include <algorithm>
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 #include TUNUM_COMMON_INCLUDE(floating/fe_holder.hpp)
 

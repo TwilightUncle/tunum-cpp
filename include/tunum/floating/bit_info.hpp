@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_BIT_INFO_HPP
 
 #include <cmath>
+#include <compare>
 #include TUNUM_COMMON_INCLUDE(bit.hpp)
 
 namespace tunum
@@ -75,6 +76,14 @@ namespace tunum
 
         constexpr explicit operator T() const noexcept
         { return std::bit_cast<T, data_store_t>(this->data); }
+
+        // 浮動小数点型としての比較に準じる
+        constexpr auto operator<=>(const floating_bit_info& r) const noexcept
+        { return T(*this) <=> T(r); }
+
+        // 浮動小数点型としての比較に準じる
+        constexpr bool operator==(const floating_bit_info& r) const noexcept
+        { return T(*this) == T(r); }
 
         // --------------------------------
         // ビット表現の抽出

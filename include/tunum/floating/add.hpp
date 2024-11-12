@@ -35,13 +35,13 @@ namespace tunum
             if (!is_run)
                 return {e, is_run, return_value};
 
-            const auto num_of_infinity = parent_t::count_infinity(info1, info2);
+            const auto [small, large] = std::minmax({info1.change_sign(false), info2.change_sign(false)});
             const auto is_same_sign = info1.sign() == info2.sign();
             // 両方無限大かつ符号が異なる場合は不正な演算とする
-            if (num_of_infinity == 2 && !is_same_sign)
+            if (small.is_infinity() && !is_same_sign)
                 return {FE_INVALID, false, info_t::get_nan()};
             // 少なくともどちらか一方が無限大(データが失われたわけではないので、エラーはなし)
-            if (num_of_infinity > 0)
+            if (large.is_infinity())
                 return {
                     std::fexcept_t{},
                     false,
@@ -55,12 +55,8 @@ namespace tunum
                 // さらに、正規化数の最大値より一方の値を引いた結果より、もう一方の値が大きい場合に無限大となる
                 constexpr auto norm_max = info_t::make_max();
                 constexpr auto lost_max = norm_max.make_lost_info_max();
-                const auto sign = info1.sign();
-                const auto cond1 = (calc_t)lost_max < (calc_t)info1.change_sign(false)
-                    && (calc_t)lost_max < (calc_t)info2.change_sign(false);
-                const auto cond2 = (calc_t)norm_max - (calc_t)info1.change_sign(false) < (calc_t)info2.change_sign(false);
-                if (cond1 && cond2)
-                    return {FE_INEXACT | FE_OVERFLOW, false, info_t::get_infinity(sign < 0)};
+                if ((lost_max < small) && (calc_t(norm_max) - calc_t(small) < calc_t(large)))
+                    return {FE_INEXACT | FE_OVERFLOW, false, info_t::get_infinity(info1.sign() < 0)};
             }
             return {std::fexcept_t{}, true, calc_t{}};
         };
@@ -73,7 +69,7 @@ namespace tunum
 
             // 結果がゼロなのに、符号をそろえたオペランドが異なる場合アンダーフロー
             //  ->発生しうるの？
-            return (result.is_zero() && (calc_t)arg1 != -(calc_t)arg2)
+            return (result.is_zero() && calc_t(arg1) != -calc_t(arg2))
                 ? FE_INEXACT | FE_UNDERFLOW
                 : parent_t::check_after_default(result, arg1, arg2);
         };
