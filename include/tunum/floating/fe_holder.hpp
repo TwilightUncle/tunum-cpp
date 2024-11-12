@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_FE_HOLDER_HPP
 
 #include <cfenv>
+#include <compare>
 #include TUNUM_COMMON_INCLUDE(floating/std_info.hpp)
 
 namespace tunum
@@ -90,6 +91,14 @@ namespace tunum
 
         constexpr bool operator!() const noexcept
         { return !value; }
+
+        template <std::floating_point U>
+        auto operator<=>(const fe_holder<U>& r) const noexcept
+        { return value <=> r.value; }
+
+        template <std::floating_point U>
+        bool operator==(const fe_holder<U>& r) const noexcept
+        { return value <=> r.value;}
 
         constexpr fe_holder operator+() const noexcept
         { return {*this}; }

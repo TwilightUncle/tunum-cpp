@@ -166,6 +166,29 @@ TEST(TunumFloatingTest, FeHolderTest)
     }
 }
 
+TEST(TunumFloatingTest, FeHolderOperatorTest)
+{
+    constexpr auto float_info = tunum::floating_std_info{0.f};
+
+    // 算術以外の演算子オーバーロードテスト
+    // 内部の浮動小数点型をそのまま比較しているだけなので、型キャストメインで確認
+    constexpr auto val1 = tunum::fe_holder{1.5};
+    constexpr auto val2 = -val1;
+    EXPECT_TRUE(val1 > val2);
+    EXPECT_TRUE(val1 <= tunum::fe_holder{1.5f});
+    EXPECT_TRUE(val1 <= tunum::fe_holder{1.6f});
+    EXPECT_TRUE(tunum::fe_holder{-1.9f} < val2);
+    EXPECT_TRUE(-1.5f >= val2);
+    EXPECT_TRUE(-1.5 == val2);
+    EXPECT_TRUE(val1 != -1.5f);
+
+    constexpr auto val3 = tunum::fe_holder{0.};
+    EXPECT_TRUE(static_cast<bool>(val1));
+    EXPECT_FALSE(static_cast<bool>(val3));
+    EXPECT_FALSE(!val2);
+    EXPECT_TRUE(!val3);
+}
+
 TEST(TunumFloatingTest, AddTest)
 {
     constexpr auto float_info = tunum::floating_std_info{0.f};
@@ -300,7 +323,7 @@ TEST(TunumFloatingTest, SubTest)
 
 }
 
-TEST(TunumFloatingTest, FeHolderOperatorTest)
+TEST(TunumFloatingTest, FeHolderArithmeticOperatorTest)
 {
     // 比較
     // 単項+-
