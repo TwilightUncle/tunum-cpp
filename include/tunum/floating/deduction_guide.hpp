@@ -2,6 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_FLOATING_DEDUCTION_GUIDE_HPP
 
 #include TUNUM_COMMON_INCLUDE(floating/sub.hpp)
+#include TUNUM_COMMON_INCLUDE(floating/mul.hpp)
 
 namespace tunum
 {
@@ -70,6 +71,23 @@ namespace tunum
     requires (std::is_arithmetic_v<Arg1> && std::is_arithmetic_v<Arg2>)
     sub(Arg1, Arg2)
         -> sub<integral_to_floating_t<Arg1, Arg2>, integral_to_floating_t<Arg2, Arg1>>;
+
+    // --------------------------------------------------------------
+    // 乗算の推論補助
+    // --------------------------------------------------------------
+
+    template <class Arg1, std::floating_point Arg2>
+    requires (std::is_arithmetic_v<Arg1>)
+    mul(Arg1, fe_holder<Arg2>)
+        -> mul<integral_to_floating_t<Arg1, Arg2>, Arg2>;
+    template <std::floating_point Arg1, class Arg2>
+    requires (std::is_arithmetic_v<Arg2>)
+    mul(fe_holder<Arg1>, Arg2)
+        -> mul<Arg1, integral_to_floating_t<Arg2, Arg1>>;
+    template <class Arg1, class Arg2>
+    requires (std::is_arithmetic_v<Arg1> && std::is_arithmetic_v<Arg2>)
+    mul(Arg1, Arg2)
+        -> mul<integral_to_floating_t<Arg1, Arg2>, integral_to_floating_t<Arg2, Arg1>>;
 }
 
 #endif

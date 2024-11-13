@@ -304,6 +304,10 @@ namespace tunum
         static constexpr floating_bit_info make_max(bool signbit = false) noexcept
         { return {~make_min(!signbit).data}; }
 
+        // 仮数部の全ビットを立てた解釈オブジェクトを生成
+        static constexpr floating_bit_info make_mantissa_fullbit(bool signbit = false, exponent_value_t exp = 0)
+        { return floating_bit_info{signbit, exp, mantissa_mask}; }
+
         // 情報落ちする最大の値
         constexpr floating_bit_info make_lost_info_max(bool signbit = false) const noexcept
         {

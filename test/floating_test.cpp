@@ -323,6 +323,110 @@ TEST(TunumFloatingTest, SubTest)
 
 }
 
+TEST(TunumFloatingTest, MulTest)
+{
+    constexpr auto float_info = tunum::floating_std_info{0.f};
+
+    // 型推論と、結果が大きいほうの型に統一されているか
+    // 整数同士の計算はfloatになるか
+    constexpr auto mul_1 = tunum::mul(0.f, tunum::fe_holder{3.3});
+    constexpr auto mul_2 = tunum::mul(tunum::fe_holder{0.3}, -7);
+    constexpr auto mul_3 = tunum::mul(2, 8.3f);
+    constexpr auto mul_4 = tunum::mul(-1, 5ull);
+    static_assert(std::is_same_v<typename decltype(mul_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(mul_2)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(mul_3)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(mul_4)::calc_t, float>);
+    EXPECT_EQ(mul_1, 0.f * 3.3);
+    EXPECT_EQ(mul_2, 0.3 * -7);
+    EXPECT_EQ(mul_3, 2 * 8.3f);
+    EXPECT_EQ(mul_4, -5.f);
+
+    // 引数がNaNのみ、または有限数とNaN
+    constexpr auto arg_nan1 = tunum::mul(float_info.get_nan(), 1.f);
+    EXPECT_TRUE(tunum::floating_std_info{arg_nan1}.is_nan());
+    EXPECT_FALSE(arg_nan1.has_fexcept());
+    constexpr auto arg_nan2 = tunum::mul(1.f, float_info.get_nan(true));
+    EXPECT_TRUE(tunum::floating_std_info{arg_nan2}.is_nan());
+    EXPECT_FALSE(arg_nan2.has_fexcept());
+    constexpr auto arg_nan3 = tunum::mul(float_info.get_nan(), float_info.get_nan(true));
+    EXPECT_TRUE(tunum::floating_std_info{arg_nan3}.is_nan());
+    EXPECT_FALSE(arg_nan3.has_fexcept());
+
+    // 引数が0以上の有限数と無限大
+    constexpr auto arg_inf1 = tunum::mul(float_info.get_infinity(), 1.f);
+    EXPECT_TRUE(tunum::floating_std_info{arg_inf1}.is_infinity());
+    EXPECT_TRUE(tunum::floating_std_info{arg_inf1}.sign() > 0);
+    EXPECT_FALSE(arg_inf1.has_fexcept());
+    constexpr auto arg_inf2 = tunum::mul(float_info.get_denormalized_min(true), float_info.get_infinity());
+    EXPECT_TRUE(tunum::floating_std_info{arg_inf2}.is_infinity());
+    EXPECT_TRUE(tunum::floating_std_info{arg_inf2}.sign() < 0);
+    EXPECT_FALSE(arg_inf2.has_fexcept());
+
+    // 引数が0と有限数
+    constexpr auto arg_zero_zero = tunum::mul(0.f, 0.f);
+    EXPECT_EQ(arg_zero_zero, 0);
+    EXPECT_FALSE(arg_zero_zero.has_fexcept());
+    constexpr auto arg_norm_zero = tunum::mul(float_info.get_max(), 0.f);
+    EXPECT_EQ(arg_norm_zero, 0);
+    EXPECT_FALSE(arg_norm_zero.has_fexcept());
+    constexpr auto arg_zero_denorm = tunum::mul(0.f, -float_info.get_denormalized_min());
+    EXPECT_EQ(arg_zero_denorm, 0);
+    EXPECT_FALSE(arg_zero_denorm.has_fexcept());
+
+    // 引数が0と無限大
+    constexpr auto arg_zero_inf = tunum::mul(0.f, float_info.get_infinity());
+    EXPECT_TRUE(tunum::floating_std_info{arg_zero_inf}.is_nan());
+    EXPECT_FALSE(arg_zero_inf.has_inexact());
+    EXPECT_FALSE(arg_zero_inf.has_divbyzero());
+    EXPECT_TRUE(arg_zero_inf.has_invalid());
+    EXPECT_FALSE(arg_zero_inf.has_overflow());
+    EXPECT_FALSE(arg_zero_inf.has_underflow());
+
+    // 無限大とNaN
+    constexpr auto arg_nan_inf = tunum::mul(float_info.get_nan(), float_info.get_infinity());
+    EXPECT_TRUE(tunum::floating_std_info{arg_nan_inf}.is_nan());
+    EXPECT_FALSE(arg_nan_inf.has_fexcept());
+    constexpr auto arg_inf_nan = tunum::mul(float_info.get_infinity(), float_info.get_nan());
+    EXPECT_TRUE(tunum::floating_std_info{arg_inf_nan}.is_nan());
+    EXPECT_FALSE(arg_inf_nan.has_fexcept());
+
+    // 結果が非正規化数のアンダーフロー
+    constexpr auto udf_1 = tunum::mul(0.1f, float_info.get_min());
+    EXPECT_TRUE(tunum::floating_std_info{udf_1}.is_denormalized());
+    EXPECT_TRUE(udf_1 > 0);
+    EXPECT_TRUE(udf_1.has_inexact());
+    EXPECT_FALSE(udf_1.has_divbyzero());
+    EXPECT_FALSE(udf_1.has_invalid());
+    EXPECT_FALSE(udf_1.has_overflow());
+    EXPECT_TRUE(udf_1.has_underflow());
+    // 結果が0のアンダーフロー
+    constexpr auto udf_2 = tunum::mul(0.1f, float_info.get_denormalized_min());
+    EXPECT_EQ(udf_2, 0);
+    EXPECT_TRUE(udf_2.has_inexact());
+    EXPECT_FALSE(udf_2.has_divbyzero());
+    EXPECT_FALSE(udf_2.has_invalid());
+    EXPECT_FALSE(udf_2.has_overflow());
+    EXPECT_TRUE(udf_2.has_underflow());
+
+    // オーバーフロー(正規化数最大値 * 浮動小数点型で表現可能な1より大きい隣接する値)
+    constexpr auto ovf_1 = tunum::mul(float_info.get_max(), (float)tunum::floating_std_info<float>{false, 0, 1u});
+    EXPECT_TRUE(tunum::floating_std_info{ovf_1}.is_infinity());
+    EXPECT_TRUE(ovf_1.has_inexact());
+    EXPECT_FALSE(ovf_1.has_divbyzero());
+    EXPECT_FALSE(ovf_1.has_invalid());
+    EXPECT_TRUE(ovf_1.has_overflow());
+    EXPECT_FALSE(ovf_1.has_underflow());
+    // 正規化数最大値 * 1 ではオーバーフローは発生しない
+    constexpr auto non_ovf = tunum::mul(float_info.get_max(), 1.f);
+    EXPECT_EQ(float_info.get_max(), non_ovf);
+}
+
+TEST(TunumFloatingTest, DivTest)
+{
+
+}
+
 TEST(TunumFloatingTest, FeHolderArithmeticOperatorTest)
 {
     // 比較
