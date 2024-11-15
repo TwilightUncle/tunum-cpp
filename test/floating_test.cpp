@@ -531,17 +531,75 @@ TEST(TunumFloatingTest, DivTest)
 TEST(TunumFloatingTest, FeHolderArithmeticOperatorTest)
 {
     // 比較は上で行っている部分もあるので、何も起きなければ書かなくてよし
-    // 単項+-
+    // 単項+-も同様
 
     // 下記算術演算子の細かいテストは専用のテスト関数で行う
     // ここでは、正常な呼び出しの確認が取れればOK
 
+    constexpr auto arg1 = 2u;
+    constexpr auto arg2 = 3.1;
+    constexpr auto arg3 = tunum::fe_holder{4.1f};
+    constexpr auto arg4 = tunum::fe_holder{1.6};
+
     // 加算
+    constexpr auto add_1 = arg3 + arg4;
+    constexpr auto add_2 = arg1 + arg3;
+    constexpr auto add_3 = arg4 + arg2;
+    constexpr auto add_4 = arg2 + arg3;
+    static_assert(std::is_same_v<typename decltype(add_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(add_2)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(add_3)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(add_4)::calc_t, double>);
+    EXPECT_EQ(add_1, 4.1f + 1.6);
+    EXPECT_EQ(add_2, 2u + 4.1f);
+    EXPECT_EQ(add_3, 1.6 + 3.1);
+    EXPECT_EQ(add_4, 3.1 + 4.1f);
 
     // 減算
+    constexpr auto sub_1 = arg3 - arg4;
+    constexpr auto sub_2 = arg1 - arg3;
+    constexpr auto sub_3 = arg4 - arg2;
+    constexpr auto sub_4 = arg2 - arg3;
+    static_assert(std::is_same_v<typename decltype(sub_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(sub_2)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(sub_3)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(sub_4)::calc_t, double>);
+    EXPECT_EQ(sub_1, 4.1f - 1.6);
+    EXPECT_EQ(sub_2, 2u - 4.1f);
+    EXPECT_EQ(sub_3, 1.6 - 3.1);
+    EXPECT_EQ(sub_4, 3.1 - 4.1f);
 
     // 乗算
+    constexpr auto mul_1 = arg3 * arg4;
+    constexpr auto mul_2 = arg1 * arg3;
+    constexpr auto mul_3 = arg4 * arg2;
+    constexpr auto mul_4 = arg2 * arg3;
+    static_assert(std::is_same_v<typename decltype(mul_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(mul_2)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(mul_3)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(mul_4)::calc_t, double>);
+    EXPECT_EQ(mul_1, 4.1f * 1.6);
+    EXPECT_EQ(mul_2, 2u * 4.1f);
+    EXPECT_EQ(mul_3, 1.6 * 3.1);
+    EXPECT_EQ(mul_4, 3.1 * 4.1f);
 
     // 除算
+    constexpr auto div_1 = arg3 / arg4;
+    constexpr auto div_2 = arg1 / arg3;
+    constexpr auto div_3 = arg4 / arg2;
+    constexpr auto div_4 = arg2 / arg3;
+    static_assert(std::is_same_v<typename decltype(div_1)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(div_2)::calc_t, float>);
+    static_assert(std::is_same_v<typename decltype(div_3)::calc_t, double>);
+    static_assert(std::is_same_v<typename decltype(div_4)::calc_t, double>);
+    EXPECT_EQ(div_1, 4.1f / 1.6);
+    EXPECT_EQ(div_2, 2u / 4.1f);
+    EXPECT_EQ(div_3, 1.6 / 3.1);
+    EXPECT_EQ(div_4, 3.1 / 4.1f);
 
+    // やっぱ一応比較も
+    EXPECT_TRUE(add_1 == (4.1f + 1.6));
+    EXPECT_TRUE(add_2 != add_3);
+    EXPECT_TRUE(add_4 > sub_1);
+    EXPECT_TRUE(sub_3 <= sub_4);
 }

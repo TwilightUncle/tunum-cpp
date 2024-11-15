@@ -156,28 +156,39 @@ namespace tunum
         { return has_fexcept(FE_UNDERFLOW); }
     };
 
-    namespace fn
-    {
-        template <class T>
-        struct get_fe_holder_inner;
+    // 四則演算子のオーバーロード
 
-        template <std::integral T>
-        struct get_fe_holder_inner<T>
-            : public std::type_identity<double> {};
-        
-        template <std::floating_point T>
-        struct get_fe_holder_inner<T>
-            : public std::type_identity<T> {};
+    template <std::floating_point T>
+    constexpr auto operator+(const fe_holder<T>& arg1, const auto& arg2)
+    { return add(arg1, arg2); }
+    template <class T1, std::floating_point T2>
+    requires (std::is_arithmetic_v<T1>)
+    constexpr auto operator+(const T1 arg1, const fe_holder<T2>& arg2)
+    { return add(arg1, arg2); }
 
-        template <std::floating_point T>
-        struct get_fe_holder_inner<fe_holder<T>>
-            : public std::type_identity<T> {};
-    }
+    template <std::floating_point T>
+    constexpr auto operator-(const fe_holder<T>& arg1, const auto& arg2)
+    { return sub(arg1, arg2); }
+    template <class T1, std::floating_point T2>
+    requires (std::is_arithmetic_v<T1>)
+    constexpr auto operator-(T1 arg1, const fe_holder<T2>& arg2)
+    { return sub(arg1, arg2); }
 
-    using get_fe_holder_inner = tump::cbk<fn::get_fe_holder_inner, 1>;
+    template <std::floating_point T>
+    constexpr auto operator*(const fe_holder<T>& arg1, const auto& arg2)
+    { return mul(arg1, arg2); }
+    template <class T1, std::floating_point T2>
+    requires (std::is_arithmetic_v<T1>)
+    constexpr auto operator*(T1 arg1, const fe_holder<T2>& arg2)
+    { return mul(arg1, arg2); }
 
-    template <class T>
-    using get_fe_holder_inner_t = typename fn::get_fe_holder_inner<T>::type;
+    template <std::floating_point T>
+    constexpr auto operator/(const fe_holder<T>& arg1, const auto& arg2)
+    { return div(arg1, arg2); }
+    template <class T1, std::floating_point T2>
+    requires (std::is_arithmetic_v<T1>)
+    constexpr auto operator/(T1 arg1, const fe_holder<T2>& arg2)
+    { return div(arg1, arg2); }
 }
 
 #endif
