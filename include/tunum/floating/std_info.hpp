@@ -44,6 +44,41 @@ namespace tunum
                 : (T)this->next(y - T(*this));
         }
 
+        // 無限大の値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_infinity(bool signbit = false) noexcept
+        { return (T)parent_t::make_infinity(signbit); }
+
+        // 非数の値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_nan(bool signbit = false) noexcept
+        { return (T)parent_t::make_nan(signbit); }
+
+        // ゼロの値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_zero(bool signbit = false) noexcept
+        { return (T)parent_t::make_zero(signbit); }
+
+        // 非正規化数の最小値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_denormalized_min(bool signbit = false) noexcept
+        { return (T)parent_t::make_denormalized_min(signbit); }
+
+        // 非正規化数の最大値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_denormalized_max(bool signbit = false) noexcept
+        { return (T)parent_t::make_denormalized_max(signbit); }
+
+        // 正規化数の最小値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_min(bool signbit = false) noexcept
+        { return (T)parent_t::make_min(signbit); }
+
+        // 正規化数の最大値を取得
+        // @param signbit 符号ビットの指定
+        static constexpr T get_max(bool signbit = false) noexcept
+        { return (T)parent_t::make_max(signbit); }
+
         constexpr T ldexp(int exp) const noexcept
         { return (T)this->add_exponent(exp); }
 
@@ -51,11 +86,6 @@ namespace tunum
         static constexpr T exp2_integral(int x) noexcept
         { return (T)floating_std_info{T{1}}.add_exponent(x); }
     };
-
-    // gccで親クラスのコンストラクタの型推論してくれなかったので、推論補助
-    template <std::floating_point T>
-    floating_std_info(T v)
-        -> floating_std_info<T, std::numeric_limits<T>>;
 }
 
 #endif
