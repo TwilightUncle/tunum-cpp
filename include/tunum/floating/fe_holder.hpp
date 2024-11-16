@@ -14,7 +14,7 @@ namespace tunum
 
     // 浮動小数点例外を参照可能な算術型
     // @tparam T 任意の組み込み浮動小数点型
-    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能)
+    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能で、FE_INEXACTは無視される)
     template <std::floating_point T, std::fexcept_t RaiseFeFlags = std::fexcept_t{}>
     struct fe_holder
     {
@@ -148,6 +148,29 @@ namespace tunum
         constexpr bool has_underflow() const noexcept
         { return has_fexcept(FE_UNDERFLOW); }
     };
+
+    // 浮動小数点例外保持型生成(主に、投げる例外指定時の型推論用)
+    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能)
+    // @param v fe_holderに変換したい浮動小数点型
+    template <std::fexcept_t RaiseFeFlags, std::floating_point T>
+    constexpr auto make_fe_holder(T v, std::fexcept_t e = {}) noexcept
+    { return fe_holder<T, RaiseFeFlags>{v}; };
+
+    // 浮動小数点例外保持型生成(主に、投げる例外指定時の型推論用)
+    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能)
+    // @param v fe_holderに変換したい整数型
+    template <std::fexcept_t RaiseFeFlags, std::integral T>
+    constexpr auto make_fe_holder(T v, std::fexcept_t e = {}) noexcept
+    { return fe_holder<double, RaiseFeFlags>{v}; };
+
+    // 浮動小数点例外保持型生成(主に、投げる例外指定時の型推論用)
+    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能)
+    // @param fn 浮動小数点型の結果を返却するコールバック関数
+    // @param ...args fnに渡す引数
+    template <std::fexcept_t RaiseFeFlags, class Lambda, class... Args>
+    requires (std::invocable<Lambda, Args...>)
+    constexpr auto make_fe_holder(const Lambda& fn, const Args&... args)
+    { return fe_holder<std::invoke_result_t<Lambda, Args...>, RaiseFeFlags>{fn, args...}; }
 
     // 四則演算子のオーバーロード
 

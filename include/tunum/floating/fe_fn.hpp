@@ -4,6 +4,7 @@
 #include <cfenv>
 #include <array>
 #include <algorithm>
+#include <stdexcept>
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 #include TUNUM_COMMON_INCLUDE(floating/fe_holder.hpp)
 
@@ -55,23 +56,40 @@ namespace tunum
         )
             : fe_holder_t()
         {
-            // 事前検証と浮動小数点例外の伝播
+            // 事前検証
             const auto [e, is_run, result_value] = validate_args(info_t{calc_t{args.value}}...);
-            this->fexcepts |= e | (... | args.fexcepts);
+            auto new_e = e;
 
             // 演算未実施の場合
             if (!is_run) {
                 this->value = result_value;
-                return;
-            } 
+            }
+            else {
+                // メインの機能実行
+                const auto calc_result = fe_holder_t([&] { return run(calc_t{args.value}...); } );
+                this->value = calc_result.value;
 
-            // メインの機能実行
-            const auto calc_result = fe_holder_t([&] { return run(calc_t{args.value}...); } );
-            this->value = calc_result.value;
+                // runにより発生した例外と、事後チェックの例外をマージ
+                new_e |= calc_result.fexcepts
+                    | check_after(info_t{this->value}, info_t{calc_t{args.value}}...);
+            }
+            
+            // 浮動小数点例外の伝播, 統合
+            this->fexcepts |= new_e | (... | args.fexcepts);
 
-            // runにより発生した例外と、事後チェックの例外をマージ
-            this->fexcepts |= calc_result.fexcepts
-                | check_after(info_t{this->value}, info_t{calc_t{args.value}}...);
+            // 新規発生した浮動小数点例外について、例外を投げる奴は投げる
+            if constexpr (static_cast<bool>(RaiseFeFlags & FE_DIVBYZERO))
+                if (new_e & FE_DIVBYZERO)
+                    throw std::range_error("div by zero.");
+            if constexpr (static_cast<bool>(RaiseFeFlags & FE_INVALID))
+                if (new_e & FE_INVALID)
+                    throw std::domain_error("invalid calculate.");
+            if constexpr (static_cast<bool>(RaiseFeFlags & FE_OVERFLOW))
+                if (new_e & FE_OVERFLOW)
+                    throw std::overflow_error("");
+            if constexpr (static_cast<bool>(RaiseFeFlags & FE_UNDERFLOW))
+                if (new_e & FE_UNDERFLOW)
+                    throw std::underflow_error("");
         }
 
         template <class RunFn, class ValidateFn>
