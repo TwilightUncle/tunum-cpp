@@ -3,7 +3,7 @@
 
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 
-namespace tunum::fn
+namespace tunum::tpfn
 {
     // 四則演算子による算術演算の結果型を取得
     // @tparam L 左オペランド型
@@ -19,13 +19,13 @@ namespace tunum
     // 四則演算子による算術演算の結果型を取得する
     // @tparam L 左オペランド型
     // @tparam R 右オペランド型
-    using arithmetc_operation_result = tump::cbk<fn::arithmetc_operation_result, 2>;
+    using arithmetc_operation_result = tump::cbk<tpfn::arithmetc_operation_result, 2>;
 
     // 四則演算子による算術演算の結果型を取得する
     // @tparam L 左オペランド型
     // @tparam R 右オペランド型
     template <class L, class R>
-    using arithmetc_operation_result_t = typename fn::arithmetc_operation_result<L, R>::type;
+    using arithmetc_operation_result_t = typename tpfn::arithmetc_operation_result<L, R>::type;
 }
 
 #endif
