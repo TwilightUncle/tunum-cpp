@@ -11,7 +11,6 @@
 #include TUNUM_COMMON_INCLUDE(mp/integral_to_floating.hpp)
 #include TUNUM_COMMON_INCLUDE(mp/is_unsigned_fmpint.hpp)
 #include TUNUM_COMMON_INCLUDE(mp/get_int.hpp)
-#include TUNUM_COMMON_INCLUDE(mp/get_uint.hpp)
 #include TUNUM_COMMON_INCLUDE(mp/arithmetc_operation_result.hpp)
 
 namespace tunum
