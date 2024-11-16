@@ -3,7 +3,7 @@
 
 #include TUNUM_COMMON_INCLUDE(submodule_loader.hpp)
 
-namespace tunum::fn
+namespace tunum::tpfn
 {
     // Fromが整数型の場合、整数型を浮動小数点型へ置き換える
     // Fromが整数型以外の場合、Fromの型をそのまま返却
@@ -28,7 +28,7 @@ namespace tunum
     // From整数かつToが浮動小数点以外の場合はfloat型に変換
     // @tparam From 
     // @tparam To 右オペランド型
-    using integral_to_floating = tump::cbk<fn::integral_to_floating, 2>;
+    using integral_to_floating = tump::cbk<tpfn::integral_to_floating, 2>;
 
     // Fromが整数型の場合、整数型をfloat型へ置き換える
     // Fromが整数型以外の場合、Fromの型をそのまま返却
@@ -41,7 +41,7 @@ namespace tunum
     // @tparam From 
     // @tparam To 右オペランド型
     template <class From, class To = float>
-    using integral_to_floating_t = typename fn::integral_to_floating<From, To>::type;
+    using integral_to_floating_t = typename tpfn::integral_to_floating<From, To>::type;
 }
 
 #endif
