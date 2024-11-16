@@ -603,3 +603,43 @@ TEST(TunumFloatingTest, FeHolderArithmeticOperatorTest)
     EXPECT_TRUE(add_4 > sub_1);
     EXPECT_TRUE(sub_3 <= sub_4);
 }
+
+TEST(TunumFloatingTest, RaiseFexceptionTest)
+{
+    constexpr auto double_info = tunum::floating_std_info{0.};
+
+    constexpr std::fexcept_t div_by_zero_flg = FE_DIVBYZERO;
+    constexpr std::fexcept_t udf_ovf_flg = FE_UNDERFLOW | FE_OVERFLOW;
+
+    constexpr auto type_check_1 = std::is_same_v<
+        decltype(tunum::make_fe_holder<div_by_zero_flg>(std::declval<float>())),
+        tunum::fe_holder<float, div_by_zero_flg>
+    >;
+    constexpr auto type_check_2 = std::is_same_v<
+        decltype(tunum::make_fe_holder<udf_ovf_flg>(std::declval<int>())),
+        tunum::fe_holder<double, udf_ovf_flg>
+    >;
+    EXPECT_TRUE(type_check_1);
+    EXPECT_TRUE(type_check_2);
+
+    constexpr auto div_by_zero_val_1 = tunum::make_fe_holder<div_by_zero_flg>(2.f);
+    constexpr auto udf_ovf_val_1 = tunum::make_fe_holder<udf_ovf_flg>(double_info.get_max());
+    constexpr auto udf_ovf_val_2 = tunum::make_fe_holder<udf_ovf_flg>(2);
+
+    // コメントアウトを外すとコンパイルエラーとなること
+    // constexpr auto err1 = udf_ovf_val_1 - div_by_zero_val_1;
+
+    // 0除算による例外の発生
+    constexpr auto div_by_zero_val_zero = div_by_zero_val_1 - 2.f;
+    EXPECT_EQ(div_by_zero_val_zero, 0);
+    EXPECT_THROW(1 / div_by_zero_val_zero, std::range_error);
+    // 例外発生のフラグを立ててないクラスでは、特に例外が起こらない
+    EXPECT_NO_THROW(udf_ovf_val_1 / 0);
+
+    // オーバーフローによる例外の発生
+    EXPECT_THROW(udf_ovf_val_2 * udf_ovf_val_1, std::overflow_error);
+    EXPECT_NO_THROW(double_info.get_max() * div_by_zero_val_1);
+
+    // アンダーフローによる例外の発生
+    EXPECT_THROW(1 / udf_ovf_val_1, std::underflow_error);
+}

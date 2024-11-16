@@ -6,10 +6,10 @@
 namespace tunum
 {
     // 加算(減算の実装も兼ねる)
-    template <std::floating_point Arg1, std::floating_point Arg2>
-    struct add : public fe_fn<Arg1, Arg2>
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags>
+    struct add : public fe_fn<RaiseFeFlags, Arg1, Arg2>
     {
-        using parent_t = fe_fn<Arg1, Arg2>;
+        using parent_t = fe_fn<RaiseFeFlags, Arg1, Arg2>;
         using calc_t = typename parent_t::calc_t;
         using info_t = typename parent_t::info_t;
         using validate_result_t = typename parent_t::validate_result_t;
@@ -18,7 +18,7 @@ namespace tunum
         // コンストラクタ
         // -------------------------------------
 
-        constexpr add(const fe_holder<Arg1>& arg1, const fe_holder<Arg2>& arg2)
+        constexpr add(const fe_holder<Arg1, RaiseFeFlags>& arg1, const fe_holder<Arg2, RaiseFeFlags>& arg2)
             : parent_t(fn, validate, check_result, arg1, arg2)
         {}
 
