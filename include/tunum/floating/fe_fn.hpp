@@ -13,18 +13,17 @@ namespace tunum
     // 引数の検証、定義した算術関数の実行、結果の検証を行い、必要に応じて浮動小数点例外を設定する
     // fe_holderに包まれた浮動小数点型しか扱わない
     // fe_holderを継承することにより、ダウンキャストで結果型とすることができるため、コンストラクタ実行のみで関数の機能を表現
-    template <std::floating_point... ArgsT>
+    template <std::fexcept_t RaiseFeFlags, std::floating_point... ArgsT>
     requires (sizeof...(ArgsT) > 0)
-    struct fe_fn
-        : public fe_holder<
-            tump::mp_max_t<tump::list<ArgsT...>>
-        >
-    {
+    struct fe_fn : public fe_holder<
+        tump::mp_max_t<tump::list<ArgsT...>>,
+        RaiseFeFlags
+    > {
         // 最大の範囲を持つ型を抽出
         // 関数内での計算は全て、calc_tにキャストの上計算を行う
         using calc_t = tump::mp_max_t<tump::list<ArgsT...>>;
         using limits_t = std::numeric_limits<calc_t>;
-        using fe_holder_t = fe_holder<calc_t>;
+        using fe_holder_t = fe_holder<calc_t, RaiseFeFlags>;
         using info_t = floating_std_info<calc_t>;
         using validate_result_t = std::tuple<std::fexcept_t, bool, calc_t>;
 
@@ -52,7 +51,7 @@ namespace tunum
             const RunFn& run,
             const ValidateFn& validate_args,
             const CheckAfterFn& check_after, 
-            const fe_holder<ArgsT>&... args
+            const fe_holder<ArgsT, RaiseFeFlags>&... args
         )
             : fe_holder_t()
         {
@@ -79,7 +78,7 @@ namespace tunum
         constexpr fe_fn(
             const RunFn& run,
             const ValidateFn& validate_arg,
-            const fe_holder<ArgsT>&... args
+            const fe_holder<ArgsT, RaiseFeFlags>&... args
         )
             : fe_fn(run, validate_arg, check_after_default, args...)
         {}
@@ -87,7 +86,7 @@ namespace tunum
         template <class RunFn>
         constexpr fe_fn(
             const RunFn& run,
-            const fe_holder<ArgsT>&... args
+            const fe_holder<ArgsT, RaiseFeFlags>&... args
         )
             : fe_fn(run, validate_arg_default, args...)
         {}

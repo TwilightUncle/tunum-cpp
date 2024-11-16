@@ -5,14 +5,14 @@
 
 namespace tunum
 {
-    template <std::floating_point Arg1, std::floating_point Arg2>
-    struct sub : public add<Arg1, Arg2>
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags>
+    struct sub : public add<Arg1, Arg2, RaiseFeFlags>
     {
-        using parent_t = add<Arg1, Arg2>;
+        using parent_t = add<Arg1, Arg2, RaiseFeFlags>;
         using calc_t = typename parent_t::calc_t;
         using info_t = typename parent_t::info_t;
 
-        constexpr sub(const fe_holder<Arg1>& arg1, const fe_holder<Arg2>& arg2)
+        constexpr sub(const fe_holder<Arg1, RaiseFeFlags>& arg1, const fe_holder<Arg2, RaiseFeFlags>& arg2)
             : parent_t(arg1, -arg2)
         {}
     };

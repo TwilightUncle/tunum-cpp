@@ -7,13 +7,15 @@
 namespace tunum
 {
     // 四則演算のオーバーロード用前方宣言
-    template <std::floating_point Arg1, std::floating_point Arg2> struct add;
-    template <std::floating_point Arg1, std::floating_point Arg2> struct sub;
-    template <std::floating_point Arg1, std::floating_point Arg2> struct mul;
-    template <std::floating_point Arg1, std::floating_point Arg2> struct div;
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags = std::fexcept_t{}> struct add;
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags = std::fexcept_t{}> struct sub;
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags = std::fexcept_t{}> struct mul;
+    template <std::floating_point Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags = std::fexcept_t{}> struct div;
 
     // 浮動小数点例外を参照可能な算術型
-    template <std::floating_point T>
+    // @tparam T 任意の組み込み浮動小数点型
+    // @tparam RaiseFeFlags 例外送出したい例外の種類を指定(bit論理和で複数指定可能)
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags = std::fexcept_t{}>
     struct fe_holder
     {
         std::fexcept_t fexcepts = {};
@@ -38,14 +40,17 @@ namespace tunum
         {}
 
         // 別のfe_holderオブジェクトより生成
-        template <std::floating_point U>
-        constexpr fe_holder(const fe_holder<U>& feh) noexcept
+        template <std::floating_point U, std::fexcept_t Flags>
+        constexpr fe_holder(const fe_holder<U, Flags>& feh) noexcept
             : fexcepts(feh.fexcepts)
             , value(feh.value)
-        {}
+        {
+            // RaiseFeFlagsが異なる型はコンパイルエラーとする
+            static_assert(Flags == RaiseFeFlags);
+        }
 
         // 任意の式を含むラムダ式や、コールバック関数の実行よりオブジェクト生成
-        // コールバック関数の実行に伴う浮動小数点例外も記録する
+        // コールバック関数の実行に伴う浮動小数点例外も記録する(実行時のみで、コンパイル時は記録しない)
         template <class Lambda, class... Args>
         requires (std::is_invocable_r_v<T, Lambda, Args...>)
         constexpr fe_holder(const Lambda& fn, const Args&... args)
@@ -64,18 +69,6 @@ namespace tunum
                 // クリア前の例外も含め書き戻す
                 std::fesetexceptflag(&(before_e |= fexcepts), FE_ALL_EXCEPT);
             }
-            else {
-                // コンパイル時のみ結果についての検証も実施
-                const auto result_info = floating_std_info{value};
-                if (result_info.is_nan())
-                    fexcepts |= FE_INEXACT;
-                if (result_info.is_infinity())
-                    fexcepts |= FE_OVERFLOW;
-                if (result_info.is_denormalized())
-                    fexcepts |= FE_UNDERFLOW;
-                // 結果がゼロの場合も、UNDERFLOWが起こりうるが、
-                // ここで得られる情報では、結果のゼロが例外であるかどうか判定できない
-            }
         }
 
         // --------------------------------------
@@ -91,12 +84,12 @@ namespace tunum
         constexpr bool operator!() const noexcept
         { return !value; }
 
-        template <std::floating_point U>
-        constexpr auto operator<=>(const fe_holder<U>& r) const noexcept
+        template <std::floating_point U, std::fexcept_t Flags>
+        constexpr auto operator<=>(const fe_holder<U, Flags>& r) const noexcept
         { return value <=> r.value; }
 
-        template <std::floating_point U>
-        constexpr bool operator==(const fe_holder<U>& r) const noexcept
+        template <std::floating_point U, std::fexcept_t Flags>
+        constexpr bool operator==(const fe_holder<U, Flags>& r) const noexcept
         { return value == r.value;}
 
         constexpr fe_holder operator+() const noexcept
@@ -158,36 +151,36 @@ namespace tunum
 
     // 四則演算子のオーバーロード
 
-    template <std::floating_point T>
-    constexpr auto operator+(const fe_holder<T>& arg1, const auto& arg2)
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags>
+    constexpr auto operator+(const fe_holder<T, RaiseFeFlags>& arg1, const auto& arg2)
     { return add(arg1, arg2); }
-    template <class T1, std::floating_point T2>
+    template <class T1, std::floating_point T2, std::fexcept_t RaiseFeFlags>
     requires (std::is_arithmetic_v<T1>)
-    constexpr auto operator+(const T1 arg1, const fe_holder<T2>& arg2)
+    constexpr auto operator+(const T1 arg1, const fe_holder<T2, RaiseFeFlags>& arg2)
     { return add(arg1, arg2); }
 
-    template <std::floating_point T>
-    constexpr auto operator-(const fe_holder<T>& arg1, const auto& arg2)
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags>
+    constexpr auto operator-(const fe_holder<T, RaiseFeFlags>& arg1, const auto& arg2)
     { return sub(arg1, arg2); }
-    template <class T1, std::floating_point T2>
+    template <class T1, std::floating_point T2, std::fexcept_t RaiseFeFlags>
     requires (std::is_arithmetic_v<T1>)
-    constexpr auto operator-(T1 arg1, const fe_holder<T2>& arg2)
+    constexpr auto operator-(T1 arg1, const fe_holder<T2, RaiseFeFlags>& arg2)
     { return sub(arg1, arg2); }
 
-    template <std::floating_point T>
-    constexpr auto operator*(const fe_holder<T>& arg1, const auto& arg2)
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags>
+    constexpr auto operator*(const fe_holder<T, RaiseFeFlags>& arg1, const auto& arg2)
     { return mul(arg1, arg2); }
-    template <class T1, std::floating_point T2>
+    template <class T1, std::floating_point T2, std::fexcept_t RaiseFeFlags>
     requires (std::is_arithmetic_v<T1>)
-    constexpr auto operator*(T1 arg1, const fe_holder<T2>& arg2)
+    constexpr auto operator*(T1 arg1, const fe_holder<T2, RaiseFeFlags>& arg2)
     { return mul(arg1, arg2); }
 
-    template <std::floating_point T>
-    constexpr auto operator/(const fe_holder<T>& arg1, const auto& arg2)
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags>
+    constexpr auto operator/(const fe_holder<T, RaiseFeFlags>& arg1, const auto& arg2)
     { return div(arg1, arg2); }
-    template <class T1, std::floating_point T2>
+    template <class T1, std::floating_point T2, std::fexcept_t RaiseFeFlags>
     requires (std::is_arithmetic_v<T1>)
-    constexpr auto operator/(T1 arg1, const fe_holder<T2>& arg2)
+    constexpr auto operator/(T1 arg1, const fe_holder<T2, RaiseFeFlags>& arg2)
     { return div(arg1, arg2); }
 }
 
