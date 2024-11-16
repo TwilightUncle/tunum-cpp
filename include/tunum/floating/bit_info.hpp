@@ -25,16 +25,36 @@ namespace tunum
         { v.has_decimal_part() } -> std::convertible_to<bool>;
     };
 
+    // 浮動小数点型ビット解釈のための設定クラス定義
+    // これをもとに下記の情報を決定する
+    // - 仮数部と指数部のビット幅
+    // - 指数部のバイアス
+    // - 該当型の丸めモード
+    // 
+    // もし、独自実装の浮動小数点型をbit_infoで読み込ませたい場合は、
+    // 該当型に対応する、本コンセプトを満たすクラスの実装が必要。
+    template <class T>
+    concept FloatingTypeConfigurable = requires {
+        // 仮数部の2進数桁数(ビット幅)
+        { T::digits } -> std::convertible_to<int>;
+
+        // 最大の指数値。これをもとに指数値算出におけるbiasを決定する
+        { T::max_exponent } -> std::convertible_to<int>;
+
+        // 丸めスタイル
+        { T::round_style } -> std::convertible_to<std::float_round_style>;
+    };
+
     // 浮動小数点型の内部表現解析クラス
     // 基数が2であることを前提として解釈する
     // ※もし、独自実装の浮動小数点を設定する場合、丸めモードが一致したい可能性があるので、Limit関連は派生クラスで行ったほうが良いかも
-    template <class T, class LimitsT = std::numeric_limits<T>>
+    template <class T, FloatingTypeConfigurable TypeConfigT>
     struct floating_bit_info
     {
         static constexpr auto bit_width = sizeof(T) << 3;
         // numeric_limitではケチ表現の分、1桁多いためマイナス1
-        static constexpr auto mantissa_width = LimitsT::digits - 1;
-        static constexpr auto max_exponent = LimitsT::max_exponent - 1;
+        static constexpr auto mantissa_width = TypeConfigT::digits - 1;
+        static constexpr auto max_exponent = TypeConfigT::max_exponent - 1;
         static constexpr auto max_bit_width = std::bit_ceil(bit_width);
         static constexpr auto data_storeble_bytes = max_bit_width >> 3;
 
@@ -42,7 +62,7 @@ namespace tunum
         using exponent_value_t = get_int_t<sizeof(max_exponent)>;
 
         // 内部表現抽出用パラメータの制約
-        // * 仮数部のビット幅が値のビット幅より小さく、符号部も存在できるようなサイズであること
+        // - 仮数部のビット幅が値のビット幅より小さく、符号部も存在できるようなサイズであること
         static_assert(bit_width > 0);
         static_assert(mantissa_width > 0 && mantissa_width < bit_width - 1);
         static_assert(max_exponent >= 0);
@@ -314,15 +334,15 @@ namespace tunum
             // 丸めモードによって境界が異なるので、limitよりfloat_round_styleを取得の上分ける
             // なお、デフォルトと思われるround_to_nearest以外はテスト未実施
             // ※丸めモードが確定していない場合は使えない
-            static_assert(LimitsT::round_style != std::float_round_style::round_indeterminate);
-            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_infinity)
+            static_assert(TypeConfigT::round_style != std::float_round_style::round_indeterminate);
+            if constexpr (TypeConfigT::round_style == std::float_round_style::round_toward_infinity)
                 if (sign() > 0)
                     return floating_bit_info{};
-            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_neg_infinity)
+            if constexpr (TypeConfigT::round_style == std::float_round_style::round_toward_neg_infinity)
                 if (sign() < 0)
                     return floating_bit_info{}.change_sign(true);
 
-            const int exponent_sub = LimitsT::round_style == std::float_round_style::round_to_nearest
+            const int exponent_sub = TypeConfigT::round_style == std::float_round_style::round_to_nearest
                 ? 2
                 : 1;
             return floating_bit_info{
@@ -338,15 +358,15 @@ namespace tunum
             // 丸めモードによって境界が異なるので、limitよりfloat_round_styleを取得の上分ける
             // なお、デフォルトと思われるround_to_nearest以外はテスト未実施
             // ※丸めモードが確定していない場合は使えない
-            static_assert(LimitsT::round_style != std::float_round_style::round_indeterminate);
-            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_infinity)
+            static_assert(TypeConfigT::round_style != std::float_round_style::round_indeterminate);
+            if constexpr (TypeConfigT::round_style == std::float_round_style::round_toward_infinity)
                 if (sign() > 0)
                     return floating_bit_info{data_store_t{1}};
-            if constexpr (LimitsT::round_style == std::float_round_style::round_toward_neg_infinity)
+            if constexpr (TypeConfigT::round_style == std::float_round_style::round_toward_neg_infinity)
                 if (sign() < 0)
                     return floating_bit_info{data_store_t{1}}.change_sign(true);
 
-            const int exponent_sub = LimitsT::round_style == std::float_round_style::round_to_nearest
+            const int exponent_sub = TypeConfigT::round_style == std::float_round_style::round_to_nearest
                 ? 1
                 : 0;
             return floating_bit_info{

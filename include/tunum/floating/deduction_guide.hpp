@@ -14,12 +14,12 @@ namespace tunum
 
     template <std::floating_point T>
     floating_std_info(T v)
-        -> floating_std_info<T, std::numeric_limits<T>>;
+        -> floating_std_info<T>;
 
     // fe_holderからの推論
     template <std::floating_point T>
     floating_std_info(const fe_holder<T>& v)
-        -> floating_std_info<T, std::numeric_limits<T>>;
+        -> floating_std_info<T>;
 
     // --------------------------------------------------------------
     // 浮動小数点例外を保持するオブジェクトの推論補助

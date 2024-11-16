@@ -6,22 +6,25 @@
 
 namespace tunum
 {
-    template <std::floating_point T, class LimitsT = std::numeric_limits<T>>
-    requires (LimitsT::radix == 2 && LimitsT::is_iec559)
+    template <std::floating_point T>
     struct floating_std_info
-        : public floating_bit_info<T, LimitsT>
+        : public floating_bit_info<T, std::numeric_limits<T>>
     {
-        using parent_t = floating_bit_info<T, LimitsT>;
-        using limits_t = LimitsT;
+        using limits_t = std::numeric_limits<T>;
+        using parent_t = floating_bit_info<T, limits_t>;
         using data_store_t = typename parent_t::data_store_t;
         using exponent_value_t = typename parent_t::exponent_value_t;
+
+        // 
+        static_assert(limits_t::radix == 2);
+        static_assert(limits_t::is_iec559);
 
         // ----------------------------------------------
         // コンストラクタ
         // ----------------------------------------------
 
         // 親クラスで定義されているコンストラクタは全て使用可能とする
-        using floating_bit_info<T, LimitsT>::floating_bit_info;
+        using floating_bit_info<T, limits_t>::floating_bit_info;
 
         // ----------------------------------------------
         // メンバ関数群
