@@ -19,7 +19,7 @@ namespace tunum
 
     // fmpint または 組み込み整数型 かどうか判定
     template <class T>
-    concept TuIntegral = is_fmpint_v<T> || std::is_integral_v<T>;
+    concept TuIntegral = is_integral_v<T>;
 
     // 符号なし fmpint か判定
     template <class T>
@@ -27,7 +27,7 @@ namespace tunum
 
     // 符号なしの fmpint または、符号なし整数か判定
     template <class T>
-    concept TuUnsigned = is_unsigned_fmpint_v<T> || std::is_unsigned_v<T>;
+    concept TuUnsigned = is_unsigned_v<T>;
 
     // bit演算可能なことの制約
     template <class T>
