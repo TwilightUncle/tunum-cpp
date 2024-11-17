@@ -12,9 +12,17 @@ namespace tunum::tpfn
 
     // 引数が1つだけの場合
     template <class T>
+    requires (std::is_arithmetic_v<T> || is_fmpint_v<T>)
     struct math_calclation_result<T>
         : public std::type_identity<T>
     {};
+
+    // 引数がリストで渡されてきた場合
+    template <tump::TypeList T>
+    struct math_calclation_result<T> : public tump::fn::invoke_list<
+        tump::cbk<math_calclation_result>,
+        T
+    > {};
 
     // 引数が2つ以上
     template <class ArgT1, class... ArgsT>

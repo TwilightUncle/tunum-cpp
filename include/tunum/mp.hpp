@@ -14,6 +14,6 @@
 #include TUNUM_COMMON_INCLUDE(mp/get_large_integral.hpp)
 #include TUNUM_COMMON_INCLUDE(mp/is_constexpr.hpp)
 #include TUNUM_COMMON_INCLUDE(mp/math_calculation_result.hpp)
-#include TUNUM_COMMON_INCLUDE(mp/is_fe_holder.hpp)
+#include TUNUM_COMMON_INCLUDE(mp/is_arithmetic_or_fe_holder_only.hpp)
 
 #endif
