@@ -36,12 +36,15 @@ namespace tunum
     template <class T>
     concept FloatingTypeConfigurable = requires {
         // 仮数部の2進数桁数(ビット幅)
+        typename require_constant<T::digits>;
         { T::digits } -> std::convertible_to<int>;
 
         // 最大の指数値。これをもとに指数値算出におけるbiasを決定する
+        typename require_constant<T::max_exponent>;
         { T::max_exponent } -> std::convertible_to<int>;
 
         // 丸めスタイル
+        typename require_constant<T::round_style>;
         { T::round_style } -> std::convertible_to<std::float_round_style>;
     };
 

@@ -11,7 +11,7 @@ namespace tunum
     /// @param Lambda ラムダ式の内部にて判定対象の式を記述
     /// @note 参考: https://yohhoy.hatenadiary.jp/entry/20230908/p1
     /// TODO: 汎用的なため、tumpへ定義を移動か？
-    // 判定がうまくいかない?ため、いったん使用禁止
+    // 特定コンパイラで判定がうまくいかない?ため、いったん使用禁止
     // template <class Lambda, int = (Lambda{}(), 0)>
     // constexpr bool is_constexpr(Lambda) { return true; }
     // constexpr bool is_constexpr(...) { return false; }
@@ -39,6 +39,11 @@ namespace tunum
     //         return fn2(args...);
     //     }
     // };
+
+    // コンセプトを経由したコンパイル時評価可能であることの制約
+    // @tparam ... 任意の定数式
+    // @note 参考: https://yohhoy.hatenadiary.jp/entry/20190528/p1
+    template <auto> struct require_constant;
 }
 
 #endif
