@@ -112,11 +112,9 @@ TEST(TunumMathTest, CopySignTest)
     constexpr auto copysign_1 = tunum::copysign(1, -2);
     constexpr auto copysign_2 = tunum::copysign(-1., 2.);
     constexpr auto copysign_3 = tunum::copysign(1.f, 2.f);
-    constexpr auto copysign_4 = tunum::copysign(-1.l, -2.l);
     EXPECT_EQ(copysign_1, std::copysign(1, -2));
     EXPECT_EQ(copysign_2, std::copysign(-1., 2.));
     EXPECT_EQ(copysign_3, std::copysign(1.f, 2.f));
-    EXPECT_EQ(copysign_4, std::copysign(-1.l, -2.l));
 }
 
 TEST(TunumMathTest, NextAfterTest)

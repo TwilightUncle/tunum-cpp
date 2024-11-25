@@ -7,15 +7,13 @@
 namespace tunum::_math_impl
 {
     template <std::floating_point T>
-    inline constexpr T fma(T x, T y, T z) noexcept
+    inline constexpr int fpclassify(T x) noexcept
     {
-        if (!std::is_constant_evaluated())
-            return std::fma(x, y, z);
-        return x * y + z;
-    }
-
-    inline constexpr int fpclassify(std::floating_point auto x) noexcept
-    {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::fpclassify(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::fpclassify(x);
         if (!std::is_constant_evaluated())
             return std::fpclassify(x);
         return floating_std_info{x}.get_fpclass();
@@ -24,8 +22,14 @@ namespace tunum::_math_impl
     inline constexpr int fpclassify(std::integral auto x) noexcept
     { return fpclassify(double(x)); }
 
-    inline constexpr bool isfinite(std::floating_point auto x) noexcept
+    template <std::floating_point T>
+    inline constexpr bool isfinite(T x) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::isfinite(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::isfinite(x);
         if (!std::is_constant_evaluated())
             return std::isfinite(x);
         return floating_std_info{x}.is_finity();
@@ -34,8 +38,14 @@ namespace tunum::_math_impl
     inline constexpr bool isfinite(std::integral auto x) noexcept
     { return isfinite(double(x)); }
 
-    inline constexpr bool isinf(std::floating_point auto x) noexcept
+    template <std::floating_point T>
+    inline constexpr bool isinf(T x) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::isinf(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::isinf(x);
         if (!std::is_constant_evaluated())
             return std::isinf(x);
         return floating_std_info{x}.is_infinity();
@@ -44,8 +54,14 @@ namespace tunum::_math_impl
     inline constexpr bool isinf(std::integral auto x) noexcept
     { return isinf(double(x)); }
 
-    inline constexpr bool isnan(std::floating_point auto x) noexcept
+    template <std::floating_point T>
+    inline constexpr bool isnan(T x) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::isnan(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::isnan(x);
         if (!std::is_constant_evaluated())
             return std::isnan(x);
         return floating_std_info{x}.is_nan();
@@ -54,18 +70,30 @@ namespace tunum::_math_impl
     inline constexpr bool isnan(std::integral auto x) noexcept
     { return isnan(double(x)); }
 
-    inline constexpr bool isnormal(std::floating_point auto x) noexcept
+    template <std::floating_point T>
+    inline constexpr bool isnormal(T x) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::isnormal(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::isnormal(x);
         if (!std::is_constant_evaluated())
-            return std::isnan(x);
+            return std::isnormal(x);
         return floating_std_info{x}.is_normalized();
     }
 
     inline constexpr bool isnormal(std::integral auto x) noexcept
     { return isnormal(double(x)); }
 
-    inline constexpr bool signbit(std::floating_point auto x) noexcept
+    template <std::floating_point T>
+    inline constexpr bool signbit(T x) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::signbit(T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::signbit(x);
         if (!std::is_constant_evaluated())
             return std::signbit(x);
         return floating_std_info{x}.sign() < 0;
@@ -78,8 +106,15 @@ namespace tunum::_math_impl
     requires (std::is_arithmetic_v<T>)
     inline constexpr T copysign(T x, T y) noexcept
     {
+        constexpr bool is_callable_std_defined = requires {
+            typename require_constant<std::copysign(T{}, T{})>;
+        };
+        if constexpr (is_callable_std_defined)
+            return std::copysign(x, y);
         if (!std::is_constant_evaluated())
             return std::copysign(x, y);
+        if constexpr (std::floating_point<T>)
+            return (T)floating_std_info{x}.change_sign(signbit(y));
         return (x < 0) == (y < 0) 
             ? x
             : x * -1;
@@ -183,13 +218,6 @@ namespace tunum::_math_impl
     // cpo
     // -------------------------------------------
 
-    struct fma_cpo
-    {
-        template <class T>
-        constexpr T operator()(T x, T y, T z) const
-        { return fma(x, y, z); }
-    };
-
     struct fpclassify_cpo
     {
         constexpr int operator()(auto x) const
@@ -288,15 +316,6 @@ namespace tunum::_math_impl
 
 namespace tunum
 {
-    // 乗算と加算の合成
-    // 実行時かつfma命令が有効であれば、fma命令を実行
-    // 上記以外では x * y + z
-    // @param x
-    // @param y
-    // @param z
-    // @return x * y + z
-    inline constexpr _math_impl::fma_cpo fma{};
-
     // 数値分類を取得
     // @param x 検査対象
     // @return FP_INFINITE, FP_NAN, FP_NORMAL, FP_SUBNORMAL, FP_ZEROのいずれか、あるいは処理系独自定義の数値分類
