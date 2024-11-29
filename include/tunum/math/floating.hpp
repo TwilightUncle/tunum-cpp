@@ -120,27 +120,6 @@ namespace tunum::_math_impl
             : x * -1;
     }
 
-    template <std::floating_point T>
-    inline constexpr T nextafter(T x, T y)
-    {
-        if (!std::is_constant_evaluated())
-            return std::nextafter(x, y);
-        return floating_std_info{x}.nextafter(y);
-    }
-
-    template <std::integral T>
-    inline constexpr double nextafter(T x, T y)
-    { return nextafter(double(x), double(y)); }
-
-    template <class T>
-    requires (std::is_arithmetic_v<T>)
-    inline constexpr auto nexttoward(T x, T y)
-    {
-        if (!std::is_constant_evaluated())
-            return std::nexttoward(x, y);
-        return nextafter(x, y);
-    }
-
     // ceil内での呼び出しが認識されるように、宣言
     template <std::floating_point T>
     inline constexpr T floor(T x) noexcept;
@@ -261,20 +240,6 @@ namespace tunum::_math_impl
         { return copysign(x, y); }
     };
 
-    struct nextafter_cpo
-    {
-        template <class T>
-        constexpr T operator()(T x, T y) const
-        { return nextafter(x, y); }
-    };
-
-    struct nexttoward_cpo
-    {
-        template <class T>
-        constexpr T operator()(T x, T y) const
-        { return nexttoward(x, y); }
-    };
-
     struct ceil_cpo
     {
         constexpr auto operator()(auto x) const
@@ -345,16 +310,6 @@ namespace tunum
     // @param x 値担当
     // @param y 符号担当
     inline constexpr _math_impl::copysign_cpo copysign{};
-
-    // 隣接する表現の値
-    // @param from 元の値
-    // @param to 取得する値の方向
-    inline constexpr _math_impl::nextafter_cpo nextafter{};
-
-    // 隣接する表現の値
-    // @param from 元の値
-    // @param to 取得する値の方向
-    inline constexpr _math_impl::nexttoward_cpo nexttoward{};
 
     // 天井関数
     // @param x

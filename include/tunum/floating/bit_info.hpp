@@ -408,8 +408,13 @@ namespace tunum
         // @param direction 0の場合そのままの値、正の場合、大きいほうの隣接値、負の場合小さいほうの隣接値
         constexpr floating_bit_info next(float direction) const noexcept
         {
-            if (!is_finity() || direction == 0)
+            if (is_nan() || direction == 0)
                 return clone();
+
+            if (is_infinity())
+                return sign() == floating_bit_info{direction}.sign()
+                    ? clone()
+                    : make_max(sign() < 0);
 
             // 0をマイナス方向に移動させる場合または、dataの符号が負の場合は、方向を反転して計算
             // ※整数と違い、画一的に計算できない

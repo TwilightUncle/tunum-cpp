@@ -121,51 +121,89 @@ TEST(TunumMathTest, NextAfterTest)
 {
     // zero→非正規化数の計算
     constexpr auto nextafter_1 = tunum::nextafter(0.f, 1.f);
-    constexpr auto nextafter_2 = tunum::nextafter(0.f, -1.f);
+    constexpr auto nextafter_2 = tunum::nextafter(tunum::fe_holder{0.f}, -1.f);
     EXPECT_EQ(nextafter_1, std::nextafter(0.f, 1.f));
     EXPECT_EQ(nextafter_2, std::nextafter(0.f, -1.f));
+    EXPECT_TRUE(nextafter_2.has_underflow());
 
     // 非正規化数→非正規化数
-    constexpr auto nextafter_3 = tunum::nextafter(nextafter_1, 1.f);
+    constexpr auto nextafter_3 = tunum::nextafter(nextafter_1, tunum::fe_holder{1.f});
     EXPECT_EQ(nextafter_3, std::nextafter(nextafter_1, 1.f));
+    EXPECT_TRUE(nextafter_3.has_underflow());
 
     // 非正規化数→zero
-    constexpr auto nextafter_4 = tunum::nextafter(nextafter_2, 1.f);
+    constexpr auto nextafter_4 = tunum::nextafter(nextafter_2, tunum::fe_holder{1.f});
     EXPECT_EQ(nextafter_4, std::nextafter(nextafter_2, 1.f));
     EXPECT_EQ(nextafter_4, 0);
+    EXPECT_TRUE(nextafter_4.has_underflow());
 
     // 入力が等しい
     constexpr auto nexttoward_1 = tunum::nexttoward(1.f, 1.f);
     constexpr auto nexttoward_2 = tunum::nexttoward(-3.2f, -3.2f);
-    constexpr auto nexttoward_3 = tunum::nexttoward(0.f, 0.f);
+    constexpr auto nexttoward_3 = tunum::nexttoward(tunum::fe_holder{0.f}, 0.f);
+    constexpr auto nexttoward_inf_inf = tunum::nexttoward(tunum::fe_holder{test_values::inf}, test_values::inf);
     EXPECT_EQ(nexttoward_1, std::nexttoward(1.f, 1.f));
     EXPECT_EQ(nexttoward_2, std::nexttoward(-3.2f, -3.2f));
     EXPECT_EQ(nexttoward_3, std::nexttoward(0.f, 0.f));
+    EXPECT_EQ(nexttoward_inf_inf, test_values::inf);
+    EXPECT_FALSE(nexttoward_3.has_fexcept());
+    EXPECT_FALSE(nexttoward_inf_inf.has_fexcept());
 
     // 正規化数→正規化数
     constexpr auto nexttoward_4 = tunum::nexttoward(-1.f, 0.f);
-    constexpr auto nexttoward_5 = tunum::nexttoward(-1.f, -2.f);
+    constexpr auto nexttoward_5 = tunum::nexttoward(tunum::fe_holder{-1.f}, -2.f);
     EXPECT_EQ(nexttoward_4, std::nexttoward(-1.f, 0.f));
     EXPECT_EQ(nexttoward_5, std::nexttoward(-1.f, -2.f));
+    EXPECT_FALSE(nexttoward_5.has_fexcept());
 
     // 正規化数→非正規化数
     constexpr auto min_norm = std::numeric_limits<float>::min();
-    constexpr auto nexttoward_6 = tunum::nexttoward(min_norm, 0.f);
+    constexpr auto nexttoward_6 = tunum::nexttoward(min_norm, tunum::fe_holder{0.f});
     EXPECT_EQ(nexttoward_6, std::nexttoward(min_norm, 0.f));
     EXPECT_TRUE(std::isnormal(test_values::min_norm));
     EXPECT_TRUE(!std::isnormal(nexttoward_6) && std::isfinite(nexttoward_6));
+    EXPECT_TRUE(nexttoward_6.has_underflow());
 
     // 非正規化数→正規化数
-    constexpr auto nexttoward_7 = tunum::nexttoward(-nexttoward_6, -1.f);
+    constexpr auto nexttoward_7 = tunum::nexttoward(-nexttoward_6.value, tunum::fe_holder{-1.f});
     EXPECT_EQ(nexttoward_7, std::nexttoward(-nexttoward_6, -1.f));
     EXPECT_TRUE(std::isnormal(nexttoward_7));
+    EXPECT_FALSE(nexttoward_7.has_fexcept());
 
     // 正規化数→無限大
     constexpr auto max_norm = std::numeric_limits<float>::max();
     constexpr auto inf = std::numeric_limits<float>::infinity();
-    constexpr auto nexttoward_8 = tunum::nexttoward(max_norm, inf);
+    constexpr auto nexttoward_8 = tunum::nexttoward(max_norm, tunum::fe_holder{inf});
     EXPECT_EQ(nexttoward_8, std::nexttoward(max_norm, inf));
     EXPECT_EQ(nexttoward_8, inf);
+    EXPECT_TRUE(nexttoward_8.has_overflow());
+
+    // 無限大を小さいほうに動かそうとしたときの動作
+    constexpr auto inf_to_under1 = tunum::nexttoward(inf, tunum::fe_holder{max_norm});
+    constexpr auto inf_to_under2 = tunum::nexttoward(inf, tunum::fe_holder{0.f});
+    constexpr auto inf_to_under3 = tunum::nexttoward(inf, tunum::fe_holder{-inf});
+    EXPECT_EQ(inf_to_under1, std::nexttoward(inf, max_norm));
+    EXPECT_EQ(inf_to_under2, std::nexttoward(inf, 0.f));
+    EXPECT_EQ(inf_to_under3, std::nexttoward(inf, -inf));
+    EXPECT_FALSE(inf_to_under1.has_fexcept());
+    EXPECT_FALSE(inf_to_under2.has_fexcept());
+    EXPECT_FALSE(inf_to_under3.has_fexcept());
+
+    // 整数 -> 整数
+    constexpr auto nextafter_i = tunum::nextafter(1, 2);
+    constexpr auto nexttoward_i = tunum::nextafter(-1, -2);
+    EXPECT_EQ(nextafter_i, std::nextafter(1., 2.));
+    EXPECT_EQ(nexttoward_i, std::nexttoward(-1., -2.));
+
+    // 整数を絡めた異なる型同士
+    constexpr auto nextafter_an1 = tunum::nextafter(0.f, 5);
+    constexpr auto nextafter_an2 = tunum::nextafter(tunum::fe_holder{0.f}, 5);
+    constexpr auto nexttoward_an1 = tunum::nexttoward(0, 5.f);
+    constexpr auto nexttoward_an2 = tunum::nexttoward(0ul, tunum::fe_holder{5.f});
+    EXPECT_EQ(nextafter_an1, std::nextafter(0.f, 5));
+    EXPECT_EQ(nextafter_an2, std::nextafter(0.f, 5));
+    EXPECT_EQ(nexttoward_an1, std::nextafter(0, 5.f));
+    EXPECT_EQ(nexttoward_an2, std::nextafter(0ul, 5.f));
 }
 
 TEST(TunumMathTest, NearIntegralTest)
