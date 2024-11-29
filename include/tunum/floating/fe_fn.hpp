@@ -122,7 +122,7 @@ namespace tunum
             return exsists_nan(infos...)
                 ? validate_result_t{std::fexcept_t{}, false, info_t::get_nan()}
                 // 無限を含む計算は関数によって、結果がNaNや0になることもあるので、継承先で実装を行う
-                : validate_result_t{ std::fexcept_t{}, true, calc_t{} };
+                : make_validate_result_ok();
         }
 
         // コンストラクタのデフォルト引数
@@ -132,6 +132,9 @@ namespace tunum
                 ? std::fexcept_t{FE_INEXACT | FE_UNDERFLOW}
                 : std::fexcept_t{};
         }
+
+        static constexpr validate_result_t make_validate_result_ok() noexcept
+        { return { std::fexcept_t{}, true, calc_t{} }; }
 
         // // 引数の検証を行う
         // // 実装は任意

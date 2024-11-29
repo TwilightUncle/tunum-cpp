@@ -58,7 +58,7 @@ namespace tunum
                 if ((lost_max < small) && (calc_t(norm_max) - calc_t(small) < calc_t(large)))
                     return {FE_INEXACT | FE_OVERFLOW, false, info_t::get_infinity(info1.sign() < 0)};
             }
-            return {std::fexcept_t{}, true, calc_t{}};
+            return parent_t::make_validate_result_ok();
         };
 
         static constexpr auto check_result = [](const info_t& result, const info_t& arg1, const info_t& arg2) -> std::fexcept_t

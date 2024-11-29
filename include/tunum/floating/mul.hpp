@@ -56,7 +56,7 @@ namespace tunum
             };
             return norm_max.exponent() < info1.exponent() + info2.exponent() + info1_e0_x_info2_e0.exponent()
                 ? validate_result_t{FE_INEXACT | FE_OVERFLOW, false, info_t::get_infinity(is_minus)}
-                : validate_result_t{std::fexcept_t{}, true, calc_t{}};
+                : parent_t::make_validate_result_ok();
         };
 
         static constexpr auto check_result = [](const info_t& result, const info_t& arg1, const info_t& arg2) -> std::fexcept_t
