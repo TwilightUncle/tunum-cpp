@@ -42,9 +42,11 @@ namespace tunum
         // 隣接するbit表現の値を取得
         constexpr T nextafter(T y) const
         {
-            return floating_std_info{y}.is_nan()
-                ? y
-                : (T)this->next(y - T(*this));
+            if (floating_std_info{y}.is_nan())
+                return y;
+            return y < T(*this)
+                ? (T)this->next(-1.f)
+                : (T)this->next(static_cast<float>(y != T(*this)));
         }
 
         // 無限大の値を取得
