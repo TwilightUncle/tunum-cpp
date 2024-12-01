@@ -7,8 +7,8 @@
 // ----------------------------------------
 
 // 各依存ライブラリ内のインクルードパス設定
-#ifndef TUMP_V_0_1_1_COMMON_INCLUDE
-#define TUMP_V_0_1_1_COMMON_INCLUDE(path) <tump-cpp/include/tump/path>
+#ifndef TUMP_V_0_1_2_COMMON_INCLUDE
+#define TUMP_V_0_1_2_COMMON_INCLUDE(path) <tump-cpp/include/tump/path>
 #endif
 
 // 依存ライブラリインクルード
@@ -17,7 +17,7 @@
 // tunum内部用、依存ライブラリのエイリアス
 namespace tunum
 {
-    namespace tump = tump_0_1_1;
+    namespace tump = tump_0_1_2;
 }
 
 #endif
