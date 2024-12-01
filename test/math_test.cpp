@@ -208,26 +208,30 @@ TEST(TunumMathTest, NextAfterTest)
 
 TEST(TunumMathTest, NearIntegralTest)
 {
-    // constexpr auto ceil_01 = tunum::ceil(2.f);
-    // constexpr auto ceil_02 = tunum::ceil(-2.f);
-    // constexpr auto ceil_03 = tunum::ceil(2.1f);
-    // constexpr auto ceil_04 = tunum::ceil(-2.1f);
-    // constexpr auto ceil_05 = tunum::ceil(test_values::denorm);
-    // constexpr auto ceil_06 = tunum::ceil(-test_values::denorm);
-    // constexpr auto ceil_07 = tunum::ceil(test_values::zero);
-    // constexpr auto ceil_08 = tunum::ceil(-test_values::zero);
-    // constexpr auto ceil_09 = tunum::ceil(test_values::inf);
-    // constexpr auto ceil_10 = tunum::ceil(-test_values::inf);
-    // EXPECT_EQ(ceil_01, std::ceil(2.f));
-    // EXPECT_EQ(ceil_02, std::ceil(-2.f));
-    // EXPECT_EQ(ceil_03, std::ceil(2.1f));
-    // EXPECT_EQ(ceil_04, std::ceil(-2.1f));
-    // EXPECT_EQ(ceil_05, std::ceil(test_values::denorm));
-    // EXPECT_EQ(ceil_06, std::ceil(-test_values::denorm));
-    // EXPECT_EQ(ceil_07, std::ceil(test_values::zero));
-    // EXPECT_EQ(ceil_08, std::ceil(-test_values::zero));
-    // EXPECT_EQ(ceil_09, std::ceil(test_values::inf));
-    // EXPECT_EQ(ceil_10, std::ceil(-test_values::inf));
+    constexpr auto ceil_01 = tunum::ceil(2.f);
+    constexpr auto ceil_02 = tunum::ceil(-2.f);
+    constexpr auto ceil_03 = tunum::ceil(2.1f);
+    constexpr auto ceil_04 = tunum::ceil(-2.1f);
+    constexpr auto ceil_05 = tunum::ceil(test_values::denorm);
+    constexpr auto ceil_06 = tunum::ceil(-test_values::denorm);
+    constexpr auto ceil_07 = tunum::ceil(test_values::zero);
+    constexpr auto ceil_08 = tunum::ceil(-test_values::zero);
+    constexpr auto ceil_09 = tunum::ceil(test_values::inf);
+    constexpr auto ceil_10 = tunum::ceil(-test_values::inf);
+    constexpr auto ceil_11 = tunum::ceil(2);
+    constexpr auto ceil_12 = tunum::ceil(tunum::fe_holder{2.f});
+    EXPECT_EQ(ceil_01, std::ceil(2.f));
+    EXPECT_EQ(ceil_02, std::ceil(-2.f));
+    EXPECT_EQ(ceil_03, std::ceil(2.1f));
+    EXPECT_EQ(ceil_04, std::ceil(-2.1f));
+    EXPECT_EQ(ceil_05, std::ceil(test_values::denorm));
+    EXPECT_EQ(ceil_06, std::ceil(-test_values::denorm));
+    EXPECT_EQ(ceil_07, std::ceil(test_values::zero));
+    EXPECT_EQ(ceil_08, std::ceil(-test_values::zero));
+    EXPECT_EQ(ceil_09, std::ceil(test_values::inf));
+    EXPECT_EQ(ceil_10, std::ceil(-test_values::inf));
+    EXPECT_EQ(ceil_11, std::ceil(2));
+    EXPECT_EQ(ceil_12, std::ceil(2.f));
 
     constexpr auto floor_01 = tunum::floor(2.f);
     constexpr auto floor_02 = tunum::floor(-2.f);

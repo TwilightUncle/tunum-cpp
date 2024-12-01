@@ -120,24 +120,6 @@ namespace tunum::_math_impl
             : x * -1;
     }
 
-    // ceil内での呼び出しが認識されるように、宣言
-    template <class T>
-    inline constexpr T floor(T x) noexcept;
-
-    template <std::floating_point T>
-    inline constexpr T ceil(T x) noexcept
-    {
-        if (!std::is_constant_evaluated())
-            return std::ceil(x);
-        const auto info = floating_std_info{x};
-        return x < 0
-            ? -floor(-x)
-            : info.get_integral_part() + T(info.has_decimal_part());
-    }
-
-    inline constexpr double ceil(std::integral auto x) noexcept
-    { return ceil(double(x)); }
-
     template <std::floating_point T>
     inline constexpr T trunc(T x) noexcept
     {
@@ -227,12 +209,6 @@ namespace tunum::_math_impl
         { return copysign(x, y); }
     };
 
-    struct ceil_cpo
-    {
-        constexpr auto operator()(auto x) const
-        { return ceil(x); }
-    };
-
     struct trunc_cpo
     {
         constexpr auto operator()(auto x) const
@@ -291,10 +267,6 @@ namespace tunum
     // @param x 値担当
     // @param y 符号担当
     inline constexpr _math_impl::copysign_cpo copysign{};
-
-    // 天井関数
-    // @param x
-    inline constexpr _math_impl::ceil_cpo ceil{};
 
     // 0方向への丸め
     // @param x
