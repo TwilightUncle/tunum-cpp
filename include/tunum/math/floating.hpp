@@ -121,17 +121,6 @@ namespace tunum::_math_impl
     }
 
     template <std::floating_point T>
-    inline constexpr T trunc(T x) noexcept
-    {
-        if (!std::is_constant_evaluated())
-            return std::trunc(x);
-        return floating_std_info{x}.get_integral_part();
-    }
-
-    inline constexpr double trunc(std::integral auto x) noexcept
-    { return trunc(double(x)); }
-
-    template <std::floating_point T>
     inline constexpr T round(T x) noexcept
     {
         if (!std::is_constant_evaluated())
@@ -209,12 +198,6 @@ namespace tunum::_math_impl
         { return copysign(x, y); }
     };
 
-    struct trunc_cpo
-    {
-        constexpr auto operator()(auto x) const
-        { return trunc(x); }
-    };
-
     struct round_cpo
     {
         constexpr auto operator()(auto x) const
@@ -267,10 +250,6 @@ namespace tunum
     // @param x 値担当
     // @param y 符号担当
     inline constexpr _math_impl::copysign_cpo copysign{};
-
-    // 0方向への丸め
-    // @param x
-    inline constexpr _math_impl::trunc_cpo trunc{};
 
     // 四捨五入
     // @param x
