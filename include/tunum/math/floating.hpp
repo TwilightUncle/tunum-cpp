@@ -155,8 +155,9 @@ namespace tunum::_math_impl
     inline constexpr T1 copysign(T1 x, T2 y) noexcept
     {
         using calc_t2 = integral_to_floating_t<T2, double>;
-        if (!std::is_constant_evaluated())
-            return std::copysign(x, y);
+        if constexpr (std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>)
+            if (!std::is_constant_evaluated())
+                return std::copysign(x, y);
         if constexpr (is_fe_holder_v<T1>) {
             x.value = copysign(x.value, calc_t2(y));
             return fe_holder{x};
@@ -165,21 +166,6 @@ namespace tunum::_math_impl
             return (T1)floating_std_info{x}.change_sign(signbit(y));
         return copysign(double(x), calc_t2(y));
     }
-
-    template <std::floating_point T>
-    inline constexpr T round(T x) noexcept
-    {
-        if (!std::is_constant_evaluated())
-            return std::round(x);
-        const auto abs_x = copysign(x, T{1});
-        const auto abs_result = floating_std_info{abs_x}.get_decimal_part() < T{0.5}
-            ? floor(abs_x)
-            : ceil(abs_x);
-        return copysign(abs_result, x);
-    }
-
-    inline constexpr double round(std::integral auto x) noexcept
-    { return round(double(x)); }
 
     template <std::floating_point T>
     inline constexpr T modf(T value, T* iptr) noexcept
@@ -243,12 +229,6 @@ namespace tunum::_math_impl
         { return copysign(x, y); }
     };
 
-    struct round_cpo
-    {
-        constexpr auto operator()(auto x) const
-        { return round(x); }
-    };
-
     struct modf_cpo
     {
         template <class T>
@@ -295,10 +275,6 @@ namespace tunum
     // @param x 値担当
     // @param y 符号担当
     inline constexpr _math_impl::copysign_cpo copysign{};
-
-    // 四捨五入
-    // @param x
-    inline constexpr _math_impl::round_cpo round{};
 
     // 小数部と整数部の分離
     // @param value

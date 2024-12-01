@@ -7,11 +7,9 @@
 
 #include <stdexcept>
 
-#include TUNUM_COMMON_INCLUDE(math/floor.hpp)
-#include TUNUM_COMMON_INCLUDE(math/ceil.hpp)
-#include TUNUM_COMMON_INCLUDE(math/trunc.hpp)
-#include TUNUM_COMMON_INCLUDE(math/floating.hpp)
 #include TUNUM_COMMON_INCLUDE(math/nexttoward.hpp)
+#include TUNUM_COMMON_INCLUDE(math/trunc.hpp)
+#include TUNUM_COMMON_INCLUDE(math/round.hpp)
 #include TUNUM_COMMON_INCLUDE(math/abs.hpp)
 #include TUNUM_COMMON_INCLUDE(math/exp.hpp)
 #include TUNUM_COMMON_INCLUDE(math/sqrt.hpp)
