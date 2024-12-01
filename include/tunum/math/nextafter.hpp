@@ -65,7 +65,6 @@ namespace tunum::_math_impl
     // fe_nextafterの推論補助
     // --------------------------------------
 
-
     template <class Arg1, std::floating_point Arg2, std::fexcept_t RaiseFeFlags>
     requires (std::is_arithmetic_v<Arg1>)
     fe_nextafter(Arg1, fe_holder<Arg2, RaiseFeFlags>)
