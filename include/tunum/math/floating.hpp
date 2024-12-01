@@ -6,6 +6,8 @@
 
 namespace tunum::_math_impl
 {
+    // fpclassifyのオーバーロード--------------------------------------
+
     template <std::floating_point T>
     inline constexpr int fpclassify(T x) noexcept
     {
@@ -21,6 +23,13 @@ namespace tunum::_math_impl
 
     inline constexpr int fpclassify(std::integral auto x) noexcept
     { return fpclassify(double(x)); }
+
+    template <class T>
+    requires (is_fe_holder_v<T>)
+    inline constexpr int fpclassify(const T& x) noexcept
+    { return fpclassify(x.value); }
+
+    // isfiniteのオーバーロード----------------------------------------
 
     template <std::floating_point T>
     inline constexpr bool isfinite(T x) noexcept
@@ -38,6 +47,13 @@ namespace tunum::_math_impl
     inline constexpr bool isfinite(std::integral auto x) noexcept
     { return isfinite(double(x)); }
 
+    template <class T>
+    requires (is_fe_holder_v<T>)
+    inline constexpr bool isfinite(const T& x) noexcept
+    { return isfinite(x.value); }
+
+    // isinfのオーバーロード----------------------------------------
+
     template <std::floating_point T>
     inline constexpr bool isinf(T x) noexcept
     {
@@ -53,6 +69,13 @@ namespace tunum::_math_impl
 
     inline constexpr bool isinf(std::integral auto x) noexcept
     { return isinf(double(x)); }
+
+    template <class T>
+    requires (is_fe_holder_v<T>)
+    inline constexpr bool isinf(const T& x) noexcept
+    { return isinf(x.value); }
+
+    // isnanのオーバーロード-----------------------------------------
 
     template <std::floating_point T>
     inline constexpr bool isnan(T x) noexcept
@@ -70,6 +93,13 @@ namespace tunum::_math_impl
     inline constexpr bool isnan(std::integral auto x) noexcept
     { return isnan(double(x)); }
 
+    template <class T>
+    requires (is_fe_holder_v<T>)
+    inline constexpr bool isnan(const T& x) noexcept
+    { return isnan(x.value); }
+
+    // isnormalのオーバーロード-----------------------------------------
+
     template <std::floating_point T>
     inline constexpr bool isnormal(T x) noexcept
     {
@@ -86,6 +116,13 @@ namespace tunum::_math_impl
     inline constexpr bool isnormal(std::integral auto x) noexcept
     { return isnormal(double(x)); }
 
+    template <class T>
+    requires (is_fe_holder_v<T>)
+    inline constexpr bool isnormal(const T& x) noexcept
+    { return isnormal(x.value); }
+
+    // signbitのオーバーロード-----------------------------------------
+
     template <std::floating_point T>
     inline constexpr bool signbit(T x) noexcept
     {
@@ -101,23 +138,32 @@ namespace tunum::_math_impl
 
     inline constexpr bool signbit(std::integral auto x) noexcept
     { return signbit(double(x)); }
-    
+
     template <class T>
-    requires (std::is_arithmetic_v<T>)
-    inline constexpr T copysign(T x, T y) noexcept
+    requires (is_fe_holder_v<T>)
+    inline constexpr bool signbit(const T& x) noexcept
+    { return signbit(x.value); }
+
+    // copysignのオーバーロード-----------------------------------------
+
+    template <class T1, class T2>
+    requires (
+        tump::count_if_v<tump::is_arithmetic, tump::list<T1, T2>>
+        + tump::count_if_v<::tunum::is_fe_holder, tump::list<T1, T2>>
+        == 2
+    )
+    inline constexpr T1 copysign(T1 x, T2 y) noexcept
     {
-        constexpr bool is_callable_std_defined = requires {
-            typename require_constant<std::copysign(T{}, T{})>;
-        };
-        if constexpr (is_callable_std_defined)
-            return std::copysign(x, y);
+        using calc_t2 = integral_to_floating_t<T2, double>;
         if (!std::is_constant_evaluated())
             return std::copysign(x, y);
-        if constexpr (std::floating_point<T>)
-            return (T)floating_std_info{x}.change_sign(signbit(y));
-        return (x < 0) == (y < 0) 
-            ? x
-            : x * -1;
+        if constexpr (is_fe_holder_v<T1>) {
+            x.value = copysign(x.value, calc_t2(y));
+            return fe_holder{x};
+        }
+        if constexpr (std::floating_point<T1>)
+            return (T1)floating_std_info{x}.change_sign(signbit(y));
+        return copysign(double(x), calc_t2(y));
     }
 
     template <std::floating_point T>
@@ -193,8 +239,7 @@ namespace tunum::_math_impl
 
     struct copysign_cpo
     {
-        template <class T>
-        constexpr T operator()(T x, T y) const
+        constexpr auto operator()(auto x, auto y) const
         { return copysign(x, y); }
     };
 

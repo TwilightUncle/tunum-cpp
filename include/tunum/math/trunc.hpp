@@ -74,7 +74,7 @@ namespace tunum::_math_impl
     template <class T>
     requires (is_fe_holder_v<T>)
     inline constexpr auto trunc(const T& x) noexcept
-    { return fe_trunc(double(x)); }
+    { return fe_trunc(x); }
 
     // --------------------------------------
     // cpo

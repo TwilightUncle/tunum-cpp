@@ -79,7 +79,7 @@ namespace tunum::_math_impl
     template <class T>
     requires (is_fe_holder_v<T>)
     inline constexpr auto ceil(const T& x) noexcept
-    { return fe_ceil(double(x)); }
+    { return fe_ceil(x); }
 
     // --------------------------------------
     // cpo

@@ -25,6 +25,7 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto fpclass_09 = tunum::fpclassify(-test_values::min_norm);
     constexpr auto fpclass_10 = tunum::fpclassify(test_values::denorm);
     constexpr auto fpclass_11 = tunum::fpclassify(-test_values::denorm);
+    constexpr auto fpclass_12 = tunum::fpclassify(tunum::fe_holder{-test_values::denorm});
     EXPECT_EQ(fpclass_01, std::fpclassify(test_values::nan));
     EXPECT_EQ(fpclass_02, std::fpclassify(test_values::inf));
     EXPECT_EQ(fpclass_03, std::fpclassify(-test_values::inf));
@@ -36,6 +37,7 @@ TEST(TunumMathTest, FpClassTest)
     EXPECT_EQ(fpclass_09, std::fpclassify(-test_values::min_norm));
     EXPECT_EQ(fpclass_10, std::fpclassify(test_values::denorm));
     EXPECT_EQ(fpclass_11, std::fpclassify(-test_values::denorm));
+    EXPECT_EQ(fpclass_12, std::fpclassify(-test_values::denorm));
 
     constexpr auto isfinite_1 = tunum::isfinite(test_values::nan);
     constexpr auto isfinite_2 = tunum::isfinite(test_values::inf);
@@ -43,12 +45,14 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto isfinite_4 = tunum::isfinite(test_values::max_norm);
     constexpr auto isfinite_5 = tunum::isfinite(test_values::min_norm);
     constexpr auto isfinite_6 = tunum::isfinite(test_values::denorm);
+    constexpr auto isfinite_7 = tunum::isfinite(tunum::fe_holder{test_values::denorm});
     EXPECT_EQ(isfinite_1, std::isfinite(test_values::nan));
     EXPECT_EQ(isfinite_2, std::isfinite(test_values::inf));
     EXPECT_EQ(isfinite_3, std::isfinite(test_values::zero));
     EXPECT_EQ(isfinite_4, std::isfinite(test_values::max_norm));
     EXPECT_EQ(isfinite_5, std::isfinite(test_values::min_norm));
     EXPECT_EQ(isfinite_6, std::isfinite(test_values::denorm));
+    EXPECT_EQ(isfinite_7, std::isfinite(test_values::denorm));
 
     constexpr auto isinf_1 = tunum::isinf(test_values::nan);
     constexpr auto isinf_2 = tunum::isinf(test_values::inf);
@@ -56,12 +60,14 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto isinf_4 = tunum::isinf(test_values::max_norm);
     constexpr auto isinf_5 = tunum::isinf(test_values::min_norm);
     constexpr auto isinf_6 = tunum::isinf(test_values::denorm);
+    constexpr auto isinf_7 = tunum::isinf(tunum::fe_holder{test_values::denorm});
     EXPECT_EQ(isinf_1, std::isinf(test_values::nan));
     EXPECT_EQ(isinf_2, std::isinf(test_values::inf));
     EXPECT_EQ(isinf_3, std::isinf(test_values::zero));
     EXPECT_EQ(isinf_4, std::isinf(test_values::max_norm));
     EXPECT_EQ(isinf_5, std::isinf(test_values::min_norm));
     EXPECT_EQ(isinf_6, std::isinf(test_values::denorm));
+    EXPECT_EQ(isinf_7, std::isinf(test_values::denorm));
 
     constexpr auto isnan_1 = tunum::isnan(test_values::nan);
     constexpr auto isnan_2 = tunum::isnan(test_values::inf);
@@ -69,12 +75,14 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto isnan_4 = tunum::isnan(test_values::max_norm);
     constexpr auto isnan_5 = tunum::isnan(test_values::min_norm);
     constexpr auto isnan_6 = tunum::isnan(test_values::denorm);
+    constexpr auto isnan_7 = tunum::isnan(tunum::fe_holder{test_values::denorm});
     EXPECT_EQ(isnan_1, std::isnan(test_values::nan));
     EXPECT_EQ(isnan_2, std::isnan(test_values::inf));
     EXPECT_EQ(isnan_3, std::isnan(test_values::zero));
     EXPECT_EQ(isnan_4, std::isnan(test_values::max_norm));
     EXPECT_EQ(isnan_5, std::isnan(test_values::min_norm));
     EXPECT_EQ(isnan_6, std::isnan(test_values::denorm));
+    EXPECT_EQ(isnan_7, std::isnan(test_values::denorm));
 
     constexpr auto isnormal_1 = tunum::isnormal(test_values::nan);
     constexpr auto isnormal_2 = tunum::isnormal(test_values::inf);
@@ -82,12 +90,14 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto isnormal_4 = tunum::isnormal(test_values::max_norm);
     constexpr auto isnormal_5 = tunum::isnormal(test_values::min_norm);
     constexpr auto isnormal_6 = tunum::isnormal(test_values::denorm);
+    constexpr auto isnormal_7 = tunum::isnormal(tunum::fe_holder{test_values::denorm});
     EXPECT_EQ(isnormal_1, std::isnormal(test_values::nan));
     EXPECT_EQ(isnormal_2, std::isnormal(test_values::inf));
     EXPECT_EQ(isnormal_3, std::isnormal(test_values::zero));
     EXPECT_EQ(isnormal_4, std::isnormal(test_values::max_norm));
     EXPECT_EQ(isnormal_5, std::isnormal(test_values::min_norm));
     EXPECT_EQ(isnormal_6, std::isnormal(test_values::denorm));
+    EXPECT_EQ(isnormal_7, std::isnormal(test_values::denorm));
 
     constexpr auto signbit_1 = tunum::signbit(test_values::nan);
     constexpr auto signbit_2 = tunum::signbit(test_values::inf);
@@ -97,6 +107,7 @@ TEST(TunumMathTest, FpClassTest)
     constexpr auto signbit_6 = tunum::signbit(test_values::denorm);
     constexpr auto signbit_7 = tunum::signbit(-test_values::nan);
     constexpr auto signbit_8 = tunum::signbit(-test_values::zero);
+    constexpr auto signbit_9 = tunum::signbit(tunum::fe_holder{-test_values::zero});
     EXPECT_EQ(signbit_1, std::signbit(test_values::nan));
     EXPECT_EQ(signbit_2, std::signbit(test_values::inf));
     EXPECT_EQ(signbit_3, std::signbit(test_values::zero));
@@ -105,6 +116,7 @@ TEST(TunumMathTest, FpClassTest)
     EXPECT_EQ(signbit_6, std::signbit(test_values::denorm));
     EXPECT_EQ(signbit_7, std::signbit(-test_values::nan));
     EXPECT_EQ(signbit_8, std::signbit(-test_values::zero));
+    EXPECT_EQ(signbit_9, std::signbit(-test_values::zero));
 }
 
 TEST(TunumMathTest, CopySignTest)
@@ -112,9 +124,14 @@ TEST(TunumMathTest, CopySignTest)
     constexpr auto copysign_1 = tunum::copysign(1, -2);
     constexpr auto copysign_2 = tunum::copysign(-1., 2.);
     constexpr auto copysign_3 = tunum::copysign(1.f, 2.f);
+    constexpr auto copysign_4 = tunum::copysign(tunum::fe_holder{-1., FE_INEXACT}, 2.);
+    constexpr auto copysign_5 = tunum::copysign(-1., tunum::fe_holder{2.});
     EXPECT_EQ(copysign_1, std::copysign(1, -2));
     EXPECT_EQ(copysign_2, std::copysign(-1., 2.));
     EXPECT_EQ(copysign_3, std::copysign(1.f, 2.f));
+    EXPECT_EQ(copysign_4, std::copysign(-1., 2.));
+    EXPECT_TRUE(copysign_4.has_inexact());
+    EXPECT_EQ(copysign_5, std::copysign(-1., 2.));
 }
 
 TEST(TunumMathTest, NextAfterTest)

@@ -79,7 +79,7 @@ namespace tunum::_math_impl
     template <class T>
     requires (is_fe_holder_v<T>)
     inline constexpr auto floor(const T& x) noexcept
-    { return fe_floor(double(x)); }
+    { return fe_floor(x); }
 
     // --------------------------------------
     // cpo
