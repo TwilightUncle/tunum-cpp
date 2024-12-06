@@ -8,7 +8,7 @@
 #include <stdexcept>
 
 #include TUNUM_COMMON_INCLUDE(math/nexttoward.hpp)
-#include TUNUM_COMMON_INCLUDE(math/trunc.hpp)
+#include TUNUM_COMMON_INCLUDE(math/modf.hpp)
 #include TUNUM_COMMON_INCLUDE(math/round.hpp)
 #include TUNUM_COMMON_INCLUDE(math/abs.hpp)
 #include TUNUM_COMMON_INCLUDE(math/exp.hpp)
