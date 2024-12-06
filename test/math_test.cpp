@@ -392,13 +392,32 @@ TEST(TunumMathTest, FractionExponentTest)
 
 }
 
-TEST(TunumMathTest, MathTest)
+TEST(TunumMathTest, AbsTest)
 {
     constexpr auto abs_1 = tunum::abs(-1);
     constexpr auto abs_2 = tunum::abs(1);
+    constexpr auto abs_3 = tunum::abs(-.5f);
+    constexpr auto abs_4 = tunum::abs(.5);
+    constexpr auto abs_5 = tunum::abs(-test_values::inf);
+    constexpr auto abs_6 = tunum::abs(test_values::inf);
+    constexpr auto abs_7 = tunum::abs(test_values::nan);
+    constexpr auto abs_8 = tunum::abs(tunum::fe_holder{-.5, FE_INEXACT});
     EXPECT_EQ(abs_1, std::abs(-1));
     EXPECT_EQ(abs_2, std::abs(1));
+    EXPECT_EQ(abs_3, std::abs(-.5f));
+    EXPECT_EQ(abs_4, std::abs(.5));
+    EXPECT_EQ(abs_5, std::abs(-test_values::inf));
+    EXPECT_EQ(abs_6, std::abs(test_values::inf));
+    EXPECT_EQ(std::isnan(abs_7), std::isnan(std::abs(test_values::nan)));
+    EXPECT_EQ(abs_8, std::abs(-.5));
+    EXPECT_TRUE(abs_8.has_inexact());
 
+    // 下記整数の最小値(未定義動作のため、標準ライブラリとの比較は行わない)
+    EXPECT_EQ(tunum::abs(std::numeric_limits<long>::min()), std::numeric_limits<long>::min());
+}
+
+TEST(TunumMathTest, MathTest)
+{
     constexpr auto exp_1 = tunum::exp(float(3));
     constexpr auto exp_2 = tunum::exp(float(6.1));
     constexpr auto exp_3 = tunum::exp(float(-5));
