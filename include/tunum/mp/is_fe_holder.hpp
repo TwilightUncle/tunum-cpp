@@ -95,11 +95,6 @@ namespace tunum
     // @tparam T 検査対象型
     template <class T>
     constexpr bool is_fe_holder_v = tpfn::is_fe_holder<T>::value;
-
-    // fe_holderかどうか判定
-    // @tparam T 検査対象型
-    template <class T>
-    concept FeHoldable = is_fe_holder_v<T>;
 }
 
 #endif

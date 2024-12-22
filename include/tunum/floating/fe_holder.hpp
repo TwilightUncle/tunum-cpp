@@ -102,16 +102,16 @@ namespace tunum
             return new_value;
         }
 
-        constexpr fe_holder operator+=(const auto& opl) const
+        constexpr fe_holder operator+=(const auto& opl)
         { return (*this) = add{*this, opl}; }
 
-        constexpr fe_holder operator-=(const auto& opl) const
+        constexpr fe_holder operator-=(const auto& opl)
         { return (*this) = sub(*this, opl); }
 
-        constexpr fe_holder operator*=(const auto& opl) const
+        constexpr fe_holder operator*=(const auto& opl)
         { return (*this) = mul(*this, opl); }
 
-        constexpr fe_holder operator/=(const auto& opl) const
+        constexpr fe_holder operator/=(const auto& opl)
         { return (*this) = div(*this, opl); }
 
         // -------------------------------------

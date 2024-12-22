@@ -6,32 +6,64 @@
 
 namespace tunum::_math_impl
 {
-    // 1より小さい場合は逆数を計算
-    // 2または3の累乗から最も近い値を選択し、初期値を2または3の平方根の定数から算出する
-    // 平方根算出の実装
-    struct std_floating_sqrt_impl
+    // --------------------------------------
+    // fe_holder向けの実装
+    // --------------------------------------
+    
+    template <std::floating_point T, std::fexcept_t RaiseFeFlags>
+    struct fe_sqrt : public fe_holder<T, RaiseFeFlags>
     {
-        template <std::floating_point FloatT>
-        static constexpr FloatT sqrt_newton(FloatT x) noexcept
+        using info_t = floating_std_info<T>;
+        using parent_t = fe_holder<T, RaiseFeFlags>;
+
+        // -------------------------------------
+        // コンストラクタ
+        // -------------------------------------
+
+        constexpr fe_sqrt(const parent_t& arg)
+            : parent_t(run(arg))
+        {}
+
+        // ---------------------------------------
+        // コア部分
+        // ---------------------------------------
+
+        static constexpr parent_t sqrt_newton(const parent_t& x) noexcept
         {
            return newton_raphson{
-                    [x](FloatT v) { return v * v - x; },
-                    [](FloatT v) { return 2 * v; }
+                    // 浮動小数点例外は下記のxを含む演算にて伝播するため、
+                    // resolveの指定は不要
+                    [x](const parent_t& v) { return v * v - x; },
+                    [](const parent_t& v) { return 2 * v; }
                 }
-                .resolve(FloatT{1});
+                .resolve(parent_t{1});
         }
 
-        static constexpr auto run(std::floating_point auto x)
+        // 1より小さい場合は逆数を計算
+        // 2または3の累乗から最も近い値を選択し、初期値を2または3の平方根の定数から算出する
+        // 平方根算出の実装
+        static constexpr parent_t run(const parent_t& x)
         {
-            if (x < 0)
-                throw std::invalid_argument("Argment 'x' cannot have a value less than zero.");
-            if (x == 0 || x == 1)
+            // 0未満の定義域エラー
+            if (x < 0.f)
+                return parent_t(info_t::get_nan(), x.fexcepts | FE_INVALID);
+            // 自明な結果
+            if (x == 0.f || x == 1.f)
                 return x;
-            if (x < 1)
-                return 1 / run(1 / x);
+            if (x < 1.f)
+                return 1.f / run(1.f / x);
             return sqrt_newton(x);
         }
     };
+
+    // --------------------------------------
+    // 推論補助
+    // --------------------------------------
+
+    template <class T>
+    requires (std::is_arithmetic_v<T>)
+    fe_sqrt(T)
+        -> fe_sqrt<integral_to_floating_t<T, double>, std::fexcept_t{}>;
 
     // -----------------------------------------
     // 指数関数のオーバーロード列挙および、cpo定義
@@ -42,8 +74,11 @@ namespace tunum::_math_impl
     {
         if (!std::is_constant_evaluated())
             return std::sqrt(x);
-        return std_floating_sqrt_impl::run(x);
+        return fe_sqrt(x).value;
     }
+
+    inline constexpr auto sqrt(const FeHoldable auto& x) noexcept
+    { return fe_sqrt(x); }
 
     struct sqrt_cpo
     {

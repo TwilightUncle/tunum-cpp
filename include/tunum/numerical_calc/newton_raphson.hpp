@@ -2,7 +2,7 @@
 #define TUNUM_INCLUDE_GUARD_TUNUM_NUMERICAL_CALC_NEWTON_RAPHSON_HPP
 
 #include <stdexcept>
-#include TUNUM_COMMON_INCLUDE(concepts.hpp)
+#include TUNUM_COMMON_INCLUDE(math/abs.hpp)
 
 namespace tunum
 {
@@ -30,13 +30,13 @@ namespace tunum
 
         // 関数の近似値を算出する
         // @param init 初期値
-        // @param sigma 収束したとする誤差
-        template <TuArithmetic T>
-        requires (TuArithmeticInvocable<F, T, T> && TuArithmeticInvocable<DF, T, T>)
-        constexpr T resolve(const T& init, const T& sigma = T{}) const
+        // @param converged_diff 収束したとする差
+        template <class T>
+        requires (TuFloatingInvocable<F, T, T> && TuFloatingInvocable<DF, T, T>)
+        constexpr T resolve(const T& init, const T& converged_diff = T{}) const
         {
-            if (sigma < 0)
-                throw std::invalid_argument("Argment sigma cannot have a value less than zero.");
+            if (converged_diff < 0)
+                throw std::invalid_argument("Argment converged_diff cannot have a value less than zero.");
 
             T x = init;
             while (true) {
@@ -44,10 +44,10 @@ namespace tunum
                 const T before_x = x;
                 x -= func(x) / d_func(x);
 
-                // 誤差の範囲を判定
-                const T diff = x - before_x;
-                const T diff_abs = (std::max)(diff, -diff);
-                if (diff_abs <= sigma)
+                // 収束判定
+                const T diff = abs(x - before_x);
+                // const T diff_abs = (std::max)(diff, -diff);
+                if (diff <= converged_diff)
                     break;
             }
             return x;

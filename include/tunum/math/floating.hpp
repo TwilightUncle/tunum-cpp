@@ -147,24 +147,27 @@ namespace tunum::_math_impl
     // copysignのオーバーロード-----------------------------------------
 
     template <class T1, class T2>
-    requires (
-        tump::count_if_v<tump::is_arithmetic, tump::list<T1, T2>>
-        + tump::count_if_v<::tunum::is_fe_holder, tump::list<T1, T2>>
-        == 2
-    )
+    requires (std::is_arithmetic_v<T1> && (is_fe_holder_v<T2> || std::is_arithmetic_v<T2>))
     inline constexpr T1 copysign(T1 x, T2 y) noexcept
     {
         using calc_t2 = integral_to_floating_t<T2, double>;
         if constexpr (std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>)
             if (!std::is_constant_evaluated())
                 return std::copysign(x, y);
-        if constexpr (is_fe_holder_v<T1>) {
-            x.value = copysign(x.value, calc_t2(y));
-            return fe_holder{x};
-        }
         if constexpr (std::floating_point<T1>)
             return (T1)floating_std_info{x}.change_sign(signbit(y));
-        return copysign(double(x), calc_t2(y));
+        return copysign(double(x), y);
+    }
+
+    template <FeHoldable T1, class T2>
+    requires (is_fe_holder_v<T2> || std::is_arithmetic_v<T2>)
+    inline constexpr auto copysign(const T1& x, const T2& y) noexcept
+    {
+        // 派生型に特有の残すべき情報は存在しないため、全てfe_holderに変換
+        return fe_holder{
+            copysign(x.value, y),
+            x.fexcepts
+        };
     }
 
     // -------------------------------------------

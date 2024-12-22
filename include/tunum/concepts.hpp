@@ -29,6 +29,11 @@ namespace tunum
     template <class T>
     concept TuUnsigned = is_unsigned_v<T>;
 
+    // fe_holderかどうか判定
+    // @tparam T 検査対象型
+    template <class T>
+    concept FeHoldable = is_fe_holder_v<T>;
+
     // bit演算可能なことの制約
     template <class T>
     concept TuBitwiseOperable = requires (T& v) {
@@ -84,6 +89,17 @@ namespace tunum
     // 戻り値の検証を含めた関数
     template <class F, class R, class... Args>
     concept TuInvocableR = std::is_invocable_r_v<R, F, Args...>;
+
+    // 浮動小数点型のパラメータ、戻り値の関数
+    template <class F, class R, class... Args>
+    concept TuFloatingInvocable
+        = std::regular_invocable<F, Args...>
+        && std::is_invocable_r_v<R, F, Args...>
+        && (... && std::convertible_to<Args, R>)
+        && (
+            std::floating_point<R> && (... && std::floating_point<Args>)
+            || FeHoldable<R> && (... && FeHoldable<Args>)
+        );
 }
 
 #endif
